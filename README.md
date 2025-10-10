@@ -1,4 +1,4 @@
-# Mobile Hub - Smartphone Store
+#Smartphone Store
 
 A responsive landing page for a smartphone and accessories store, featuring a modern design, day/night mode, and interactive elements. Built with Bootstrap 5, jQuery, and the ScrollReveal library.
 
@@ -30,4 +30,4 @@ Google Fonts
 
 ## Author
 
-**Mazen Ali**
+Tuanhandsome

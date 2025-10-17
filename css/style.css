@@ -31,10 +31,19 @@ header {
 header .navbar {
   padding: 1rem 0;
 }
-header .navbar .navbar-brand img {
+
+.logo-web {
+  max-height: 100%;
+  height: 60px;
+  width: 150px;
+  object-fit: contain; /* giữ tỷ lệ, không bị méo */
+}
+
+
+/* header .navbar .navbar-brand img {
   transition: all 0.3s ease-in-out;
   width: 50px;
-}
+} */
 header .navbar .nav-link {
   font-weight: 500;
   padding: 0.5rem 1rem;

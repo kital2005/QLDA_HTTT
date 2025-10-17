@@ -1,9 +1,12 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng Ký - Phụ Kiện Điện Thoại Di Động</title>
+    <title>Đăng Nhập - Phụ Kiện Điện Thoại Di Động</title>
     <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -27,12 +30,8 @@
     <header class="sticky-top">
       <nav class="navbar navbar-expand-lg">
         <div class="container">
-          <a class="navbar-brand" href="index.html">
-            <img
-              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDUiIGZpbGw9IiNmZmMxMDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iNTAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5UUDwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+TW9iaWxlPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5IdWI8L3RleHQ+CiA8L3N2Zz4="
-              alt="TP Mobile Hub"
-              height="40"
-            />
+          <a class="navbar-brand" href="index.php">
+            <img src="./images/logo-web.png" alt="TP Mobile Hub" height="40" />
           </a>
           <button
             class="navbar-toggler"
@@ -45,7 +44,7 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
               <li class="nav-item">
-                <a class="nav-link" href="index.html">Trang chủ</a>
+                <a class="nav-link" href="index.php">Trang chủ</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#products">Sản phẩm</a>
@@ -64,39 +63,49 @@
               <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-moon"></i>
               </button>
-              <a href="login.html" class="btn btn-primary ms-2">Đăng Nhập</a>
+              <a href="register.php" class="btn btn-primary ms-2">Đăng Ký</a>
             </div>
           </div>
         </div>
       </nav>
     </header>
 
-    <!-- Register Section -->
+    <!-- Login Section -->
     <section class="hero-section py-5">
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-md-6">
+            <?php
+              // Bắt đầu session để có thể truy cập các biến session
+              if (session_status() == PHP_SESSION_NONE) {
+                  session_start();
+              }
+
+              // Hiển thị thông báo LỖI nếu có
+              if (!empty($_SESSION['error'])) {
+                  echo '<div class="alert alert-danger text-center">' . $_SESSION['error'] . '</div>';
+                  unset($_SESSION['error']); // Xóa thông báo đi để không hiện lại
+              }
+
+              // Hiển thị thông báo THÀNH CÔNG nếu có
+              if (!empty($_SESSION['success'])) {
+                  echo '<div class="alert alert-success text-center">' . $_SESSION['success'] . '</div>';
+                  unset($_SESSION['success']); // Xóa thông báo đi để không hiện lại
+              }
+            ?>
             <div class="card shadow">
               <div class="card-body p-5">
-                <h2 class="card-title text-center mb-4">Đăng Ký</h2>
-                <form id="registerForm" class="needs-validation" novalidate>
-                  <div class="mb-3">
-                    <label for="name" class="form-label">Họ và Tên</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="name"
-                      required
-                    />
-                    <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
-                  </div>
+                <h2 class="card-title text-center mb-4">Đăng Nhập</h2>
+                <form id="loginForm" class="needs-validation" action="login_process.php" method="POST" novalidate>
                   <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
                     <input
                       type="email"
                       class="form-control"
                       id="email"
+                      name="email"
                       required
+                      
                     />
                     <div class="invalid-feedback">
                       Vui lòng nhập email hợp lệ.
@@ -109,7 +118,9 @@
                         type="password"
                         class="form-control"
                         id="password"
+                        name="password"
                         required
+                        
                       />
                       <button
                         class="btn position-absolute end-0 top-0"
@@ -125,42 +136,20 @@
                       </button>
                     </div>
                     <div class="invalid-feedback">Vui lòng nhập mật khẩu.</div>
-                  </div>
-                  <div class="mb-3">
-                    <label for="confirmPassword" class="form-label"
-                      >Xác Nhận Mật Khẩu</label
-                    >
-                    <div class="position-relative">
-                      <input
-                        type="password"
-                        class="form-control"
-                        id="confirmPassword"
-                        required
-                      />
-                      <button
-                        class="btn position-absolute end-0 top-0"
-                        type="button"
-                        id="toggleConfirmPassword"
-                        style="
-                          border: none;
-                          background: transparent;
-                          z-index: 10;
-                        "
-                      >
-                        <i class="fas fa-eye"></i>
-                      </button>
-                    </div>
-                    <div class="invalid-feedback">
-                      Vui lòng xác nhận mật khẩu.
-                    </div>
-                  </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+                      <div class="form-check">
+                          <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
+                          <label class="form-check-label" for="rememberMe">Ghi nhớ tôi</label>
+                      </div>
+                        <a href="forgot_password.php">Quên mật khẩu?</a>
+                      </div>
                   <button type="submit" class="btn btn-primary w-100">
-                    Đăng Ký
+                    Đăng Nhập
                   </button>
                 </form>
                 <div class="text-center mt-3">
                   <p>
-                    Đã có tài khoản? <a href="login.html">Đăng nhập ngay</a>
+                    Chưa có tài khoản? <a href="register.php">Đăng ký ngay</a>
                   </p>
                 </div>
               </div>
@@ -176,7 +165,7 @@
         <div class="row">
           <div class="col-lg-4 mb-4 mb-lg-0">
             <img
-              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDUiIGZpbGw9IiNmZmMxMDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iNTAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5UUDwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+TW9iaWxlPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5IdWI8L3RleHQ+CiA8L3N2Zz4="
+              src="./images/logo-web.png"
               alt="TP Mobile Hub"
               height="40"
               class="mb-3"
@@ -192,7 +181,7 @@
             <h5 class="mb-3">Liên kết Nhanh</h5>
             <ul class="list-unstyled">
               <li class="mb-2">
-                <a href="index.html" class="text-white-50">Trang chủ</a>
+                <a href="index." class="text-white-50">Trang chủ</a>
               </li>
               <li class="mb-2">
                 <a href="#products" class="text-white-50">Sản phẩm</a>
@@ -269,28 +258,5 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Custom JS -->
     <script src="js/script.js"></script>
-    <script>
-      document
-        .getElementById("togglePassword")
-        .addEventListener("click", function () {
-          const password = document.getElementById("password");
-          const type =
-            password.getAttribute("type") === "password" ? "text" : "password";
-          password.setAttribute("type", type);
-          this.querySelector("i").classList.toggle("fa-eye");
-          this.querySelector("i").classList.toggle("fa-eye-slash");
-        });
-
-      document
-        .getElementById("toggleConfirmPassword")
-        .addEventListener("click", function () {
-          const password = document.getElementById("confirmPassword");
-          const type =
-            password.getAttribute("type") === "password" ? "text" : "password";
-          password.setAttribute("type", type);
-          this.querySelector("i").classList.toggle("fa-eye");
-          this.querySelector("i").classList.toggle("fa-eye-slash");
-        });
-    </script>
   </body>
 </html>

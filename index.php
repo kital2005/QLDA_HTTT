@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
   <head>
@@ -28,11 +31,10 @@
       <nav class="navbar navbar-expand-lg">
         <div class="container">
           <a class="navbar-brand" href="#">
-            <img
-              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDUiIGZpbGw9IiNmZmMxMDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iNTAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5UUDwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+TW9iaWxlPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5IdWI8L3RleHQ+CiA8L3N2Zz4="
-              alt="TP Mobile Hub"
-              height="40"
-            />
+            <img src="./images/logo-web.png" alt="TECHPHONE" height="40" />
+          </a>
+          <a class="name-logo">
+            <img src="./images/name-website.png" alt="TECHPHONE" height="40" />
           </a>
           <button
             class="navbar-toggler"
@@ -43,29 +45,43 @@
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-              <li class="nav-item">
-                <a class="nav-link" href="#home">Trang chủ</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#products">Sản phẩm</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#features">Tính năng</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#testimonials">Đánh giá</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#contact">Liên hệ</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="login.html">Đăng nhập</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="register.html">Đăng ký</a>
-              </li>
+            <ul class="navbar-nav ms-auto align-items-center">
+    <li class="nav-item">
+        <a class="nav-link" href="index.php">Trang chủ</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#products">Sản phẩm</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#features">Tính năng</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#testimonials">Đánh giá</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#contact">Liên hệ</a>
+    </li>
+
+    <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                <li><a class="dropdown-item" href="account.php">Thông tin tài khoản</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="logout.php">Đăng Xuất</a></li>
             </ul>
+        </li>
+    <?php else: ?>
+        <li class="nav-item">
+            <a class="nav-link" href="login.php">Đăng Nhập</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="register.php">Đăng Ký</a>
+        </li>
+    <?php endif; ?>
+</ul>
             <div class="ms-3 d-flex align-items-center">
               <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-moon"></i>
@@ -557,7 +573,7 @@
         <div class="row">
           <div class="col-lg-4 mb-4 mb-lg-0">
             <img
-              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDUiIGZpbGw9IiNmZmMxMDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iNTAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5UUDwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+TW9iaWxlPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5IdWI8L3RleHQ+CiA8L3N2Zz4="
+              src="./images/logo-web.png"
               alt="TP Mobile Hub"
               height="40"
               class="mb-3"

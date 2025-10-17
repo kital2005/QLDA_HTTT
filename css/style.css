@@ -30,6 +30,15 @@ header .navbar {
 header .navbar .navbar-brand img {
   transition: all 0.3s ease-in-out;
   width: 50px;
+  text-align: center;
+  align-items: center;
+}
+header .navbar .name-logo img {
+  transition: all 0.3s ease-in-out;
+  height: auto;
+  width: 300px;
+  text-align: center;
+  align-items: center;
 }
 header .navbar .nav-link {
   font-weight: 500;

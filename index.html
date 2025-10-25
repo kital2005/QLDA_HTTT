@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phụ Kiện Điện Thoại Di Động</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Header & Navigation -->
+    <header class="sticky-top">
+      <nav class="navbar navbar-expand-lg">
+        <div class="container">
+          <a class="navbar-brand" href="#">
+            <img
+              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDUiIGZpbGw9IiNmZmMxMDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iNTAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5UUDwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+TW9iaWxlPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5IdWI8L3RleHQ+CiA8L3N2Zz4="
+              alt="TP Mobile Hub"
+              height="40"
+            />
+          </a>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="#home">Trang chủ</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#products">Sản phẩm</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#features">Tính năng</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#testimonials">Đánh giá</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#contact">Liên hệ</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="login.html">Đăng nhập</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="register.html">Đăng ký</a>
+              </li>
+            </ul>
+            <div class="ms-3 d-flex align-items-center">
+              <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-moon"></i>
+              </button>
+              <a href="cart.html" class="btn btn-primary ms-2">
+                <i class="fas fa-shopping-cart"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-lg-6 hero-content scroll-reveal">
+            <h1 class="display-4 fw-bold mb-4">
+              Khám phá Công nghệ Di động Mới nhất
+            </h1>
+            <p class="lead mb-4">
+              Điện thoại thông minh cao cấp và phụ kiện với giá không thể đánh
+              bại. Trải nghiệm sự đổi mới chưa từng có.
+            </p>
+            <div class="d-flex gap-3">
+              <a href="#products" class="btn btn-primary btn-lg"
+                >Khám phá Sản phẩm</a
+              >
+              <a href="#" class="btn btn-outline-secondary btn-lg">Xem Demo</a>
+            </div>
+          </div>
+          <div class="col-lg-6 hero-image">
+            <img
+              src="https://cdn.hstatic.net/products/200000547251/prm_bc0ef882cc134409b68e13d4dfb7c6cb_master.jpg"
+              alt="Premium Smartphone"
+              class="img-fluid"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Brands Section -->
+    <section class="brands-section py-4 bg-light">
+      <div class="container">
+        <div class="row justify-content-center align-items-center">
+          <div class="col-6 text-center py-2">
+            <img
+              src="images/baner-1.png"
+              alt="Banner 1"
+              class="img-fluid brand-logo"
+            />
+          </div>
+          <div class="col-6 text-center py-2">
+            <img
+              src="images/baner-sky.png"
+              alt="Banner Sky"
+              class="img-fluid brand-logo"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="products-section py-5">
+      <div class="container">
+        <div class="section-header text-center mb-5">
+          <h2 class="section-title">Sản phẩm Nổi bật Của Chúng Tôi</h2>
+          <p class="section-subtitle">
+            Khám phá bộ sưu tập thiết bị cao cấp được tuyển chọn của chúng tôi
+          </p>
+        </div>
+        <div class="row g-4">
+          <!-- Product 1 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-danger position-absolute">Sale</div>
+              <img
+                src="images/image-1.png"
+                class="card-img-top"
+                alt="Smartphone Model X"
+              />
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Smartphone Model X</h5>
+                  <div class="price">
+                    <span class="current-price">$899</span>
+                    <span class="original-price">$999</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star-half-alt"></i>
+                  <span class="ms-1">(128)</span>
+                </div>
+                <p class="card-text">
+                  Flagship mới nhất với màn hình 120Hz và hệ thống camera ba ống
+                  kính.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <button class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+              </div>
+            </div>
+          </div>
+          <!-- Product 2 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <img
+                src="images/images-2.png"
+                class="card-img-top"
+                alt="Wireless Earbuds Pro"
+              />
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Wireless Earbuds Pro</h5>
+                  <div class="price">
+                    <span class="current-price">$199</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="far fa-star"></i>
+                  <span class="ms-1">(87)</span>
+                </div>
+                <p class="card-text">
+                  Hủy tiếng ồn chủ động với thời lượng pin 24 giờ.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <button class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+              </div>
+            </div>
+          </div>
+          <!-- Product 3 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-success position-absolute">New</div>
+              <img
+                src="images/image-3.png"
+                class="card-img-top"
+                alt="Smart Watch Series 5"
+              />
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Smart Watch Series 5</h5>
+                  <div class="price">
+                    <span class="current-price">$349</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <span class="ms-1">(214)</span>
+                </div>
+                <p class="card-text">
+                  Giám sát sức khỏe và màn hình retina luôn bật.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <button class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+              </div>
+            </div>
+          </div>
+          <!-- Product 4 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <img
+                src="images/image-4.png"
+                class="card-img-top"
+                alt="Fast Wireless Charger"
+              />
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Fast Wireless Charger</h5>
+                  <div class="price">
+                    <span class="current-price">$49</span>
+                    <span class="original-price">$69</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star"></i>
+                  <i class="fas fa-star-half-alt"></i>
+                  <span class="ms-1">(56)</span>
+                </div>
+                <p class="card-text">
+                  Sạc nhanh 15W tương thích với tất cả thiết bị Qi.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <button class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-center mt-5">
+          <a href="#" class="btn btn-outline-primary">Xem Tất cả Sản phẩm</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section py-5 bg-light">
+      <div class="container">
+        <div class="section-header text-center mb-5">
+          <h2 class="section-title" style="color: #333">
+            Tại sao Chọn Mobile Hub
+          </h2>
+          <p class="section-subtitle" style="color: #333">
+            Chúng tôi cung cấp dịch vụ tốt nhất cho khách hàng
+          </p>
+        </div>
+        <div class="row g-4">
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card text-center p-4">
+              <div class="feature-icon mb-3">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <h3 class="h5">Bảo hành 1 Năm</h3>
+              <p>
+                Tất cả sản phẩm đi kèm bảo hành đầy đủ từ nhà sản xuất để yên
+                tâm.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card text-center p-4">
+              <div class="feature-icon mb-3">
+                <i class="fas fa-truck"></i>
+              </div>
+              <h3 class="h5">Miễn phí Vận chuyển</h3>
+              <p>
+                Giao hàng miễn phí cho tất cả đơn hàng trên 50 USD với thời gian
+                giao hàng 2-3 ngày làm việc.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card text-center p-4">
+              <div class="feature-icon mb-3">
+                <i class="fas fa-undo"></i>
+              </div>
+              <h3 class="h5">Trả hàng Dễ dàng</h3>
+              <p>
+                Chính sách trả hàng trong 30 ngày cho tất cả sản phẩm chưa sử
+                dụng trong bao bì gốc.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card text-center p-4">
+              <div class="feature-icon mb-3">
+                <i class="fas fa-headset"></i>
+              </div>
+              <h3 class="h5">Hỗ trợ 24/7</h3>
+              <p>
+                Đội ngũ dịch vụ khách hàng của chúng tôi luôn sẵn sàng hỗ trợ
+                bạn.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials-section py-5">
+      <div class="container">
+        <div class="section-header text-center mb-5">
+          <h2 class="section-title">Khách hàng Của Chúng Tôi Nói Gì</h2>
+          <p class="section-subtitle">
+            Được tin tưởng bởi hàng nghìn khách hàng hài lòng
+          </p>
+        </div>
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="testimonial-card p-4">
+              <div class="ratings mb-3">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+              <p class="testimonial-text mb-4">
+                "Điện thoại tôi mua từ Mobile Hub chính xác như mô tả và đến sớm
+                hơn dự kiến. Dịch vụ tuyệt vời!"
+              </p>
+              <div class="d-flex align-items-center">
+                <img
+                  src="https://media.istockphoto.com/id/1949501832/photo/handsome-hispanic-senior-business-man-with-crossed-arms-smiling-at-camera-indian-or-latin.jpg?s=612x612&w=0&k=20&c=LtlsYrQxUyX7oRmYS37PnZeaV2JmoPX9hWYPOfojCgw="
+                  alt=""
+                  class="rounded-circle me-3"
+                  width="50"
+                />
+                <div>
+                  <h5 class="mb-0">John Johnson</h5>
+                  <small class="text-muted">Verified Buyer</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="testimonial-card p-4">
+              <div class="ratings mb-3">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star-half-alt"></i>
+              </div>
+              <p class="testimonial-text mb-4">
+                "Bộ sưu tập phụ kiện tuyệt vời với giá cạnh tranh. Bộ sạc không
+                dây hoạt động hoàn hảo với điện thoại của tôi."
+              </p>
+              <div class="d-flex align-items-center">
+                <img
+                  src="https://media.istockphoto.com/id/2166802740/photo/confident-businessman-smiling-in-sunlit-urban-environment.jpg?s=612x612&w=0&k=20&c=uZbVP0PASg3zNgDsn58q0TDPLzJbo2A7FueSDyGt96c="
+                  alt="Michael Chen"
+                  class="rounded-circle me-3"
+                  width="50"
+                />
+                <div>
+                  <h5 class="mb-0">Michael Chen</h5>
+                  <small class="text-muted">Verified Buyer</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="testimonial-card p-4">
+              <div class="ratings mb-3">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+              <p class="testimonial-text mb-4">
+                "Ấn tượng với giao hàng nhanh chóng và chất lượng sản phẩm. Chắc
+                chắn sẽ mua sắm ở đây lần nữa!"
+              </p>
+              <div class="d-flex align-items-center">
+                <img
+                  src="https://media.istockphoto.com/id/2165425298/photo/portrait-of-a-man-in-an-office.jpg?s=612x612&w=0&k=20&c=_UNK44x0NjsyR5m23BYH7P1AwKzDjE-Zxt5rYRjThFo="
+                  alt="David Martinez"
+                  class="rounded-circle me-3"
+                  width="50"
+                />
+                <div>
+                  <h5 class="mb-0">David Martinez</h5>
+                  <small class="text-muted">Verified Buyer</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section py-5 bg-primary text-white">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-lg-8">
+            <h2 class="display-6 fw-bold mb-3">
+              Sẵn sàng Nâng cấp Trải nghiệm Di động Của Bạn?
+            </h2>
+            <p class="lead mb-0">
+              Tham gia hàng nghìn khách hàng hài lòng tin tưởng Mobile Hub cho
+              nhu cầu di động của họ.
+            </p>
+          </div>
+          <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+            <a href="#" class="btn btn-light btn-lg">Mua Ngay</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section py-5 mb-1 bg-light">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-6">
+            <div class="section-header mb-5">
+              <h2 class="section-title" style="color: #333">
+                Liên hệ Chúng Tôi
+              </h2>
+              <p class="section-subtitle" style="color: #333">
+                Có câu hỏi? Hãy liên hệ với đội ngũ của chúng tôi
+              </p>
+            </div>
+            <form id="contactForm" class="needs-validation" novalidate>
+              <div class="mb-3">
+                <label for="name" class="form-label" style="color: #333"
+                  >Tên</label
+                >
+                <input type="text" class="form-control" id="name" required />
+                <div class="invalid-feedback">Vui lòng nhập tên của bạn.</div>
+              </div>
+              <div class="mb-3">
+                <label for="email" class="form-label" style="color: #333"
+                  >Email</label
+                >
+                <input type="email" class="form-control" id="email" required />
+                <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+              </div>
+              <div class="mb-3">
+                <label for="message" class="form-label" style="color: #333"
+                  >Tin nhắn</label
+                >
+                <textarea
+                  class="form-control"
+                  id="message"
+                  rows="4"
+                  required
+                ></textarea>
+                <div class="invalid-feedback">
+                  Vui lòng nhập tin nhắn của bạn.
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Gửi Tin nhắn
+              </button>
+            </form>
+          </div>
+          <div class="col-lg-6 mt-5 mt-lg-0">
+            <div class="contact-info p-4 h-100">
+              <h3 class="h4 mb-4">Thông tin Cửa hàng</h3>
+              <ul class="list-unstyled">
+                <li class="mb-3">
+                  <i class="fas fa-map-marker-alt me-2"></i>
+                  <span>123 Đường Công nghệ, Thung lũng Silicon, CA 94025</span>
+                </li>
+                <li class="mb-3">
+                  <i class="fas fa-phone me-2"></i>
+                  <span>+1 (555) 123-4567</span>
+                </li>
+                <li class="mb-3">
+                  <i class="fas fa-envelope me-2"></i>
+                  <span>info@mobilehub.com</span>
+                </li>
+                <li class="mb-3">
+                  <i class="fas fa-clock me-2"></i>
+                  <span
+                    >Thứ Hai - Thứ Sáu: 9AM - 7PM<br />Thứ Bảy - Chủ Nhật: 10AM
+                    - 5PM</span
+                  >
+                </li>
+              </ul>
+              <div class="social-links mt-4">
+                <a href="#" class="me-2"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="me-2"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="me-2"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="me-2"><i class="fab fa-linkedin-in"></i></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer py-5 bg-dark text-white">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-4 mb-4 mb-lg-0">
+            <img
+              src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDUiIGZpbGw9IiNmZmMxMDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHRleHQgeD0iNTAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5UUDwvdGV4dD4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+TW9iaWxlPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI3MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIj5IdWI8L3RleHQ+CiA8L3N2Zz4="
+              alt="TP Mobile Hub"
+              height="40"
+              class="mb-3"
+              style="width: 53px; border-radius: 50%"
+            />
+            <p>
+              Cửa hàng một điểm dừng cho các thiết bị di động và phụ kiện mới
+              nhất. Địa chỉ: Cần Thơ. Email: Tech Phone. Sản phẩm chất lượng với
+              giá cạnh tranh.
+            </p>
+          </div>
+          <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+            <h5 class="mb-3">Liên kết Nhanh</h5>
+            <ul class="list-unstyled">
+              <li class="mb-2">
+                <a href="#home" class="text-white-50">Trang chủ</a>
+              </li>
+              <li class="mb-2">
+                <a href="#products" class="text-white-50">Sản phẩm</a>
+              </li>
+              <li class="mb-2">
+                <a href="#features" class="text-white-50">Tính năng</a>
+              </li>
+              <li class="mb-2">
+                <a href="#testimonials" class="text-white-50">Đánh giá</a>
+              </li>
+              <li class="mb-2">
+                <a href="#contact" class="text-white-50">Liên hệ</a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+            <h5 class="mb-3">Danh mục</h5>
+            <ul class="list-unstyled">
+              <li class="mb-2">
+                <a href="#" class="text-white-50">Điện thoại thông minh</a>
+              </li>
+              <li class="mb-2">
+                <a href="#" class="text-white-50">Máy tính bảng</a>
+              </li>
+              <li class="mb-2">
+                <a href="#" class="text-white-50">Thiết bị đeo</a>
+              </li>
+              <li class="mb-2">
+                <a href="#" class="text-white-50">Phụ kiện</a>
+              </li>
+              <li class="mb-2"><a href="#" class="text-white-50">Ưu đãi</a></li>
+            </ul>
+          </div>
+          <div class="col-lg-4 col-md-4">
+            <h5 class="mb-3">Bản tin</h5>
+            <p>Đăng ký để nhận cập nhật về sản phẩm mới và ưu đãi đặc biệt.</p>
+            <form class="mb-3">
+              <div class="input-group">
+                <input
+                  type="email"
+                  class="form-control"
+                  placeholder="Email của bạn"
+                />
+                <button class="btn btn-primary" type="submit">Đăng ký</button>
+              </div>
+            </form>
+            <div class="payment-methods">
+              <i class="fa-brands fa-cc-visa"></i>
+              <i class="fa-brands fa-cc-mastercard"></i>
+              <i class="fa-brands fa-paypal"></i>
+              <i class="fa-brands fa-cc-apple-pay"></i>
+            </div>
+          </div>
+        </div>
+        <hr class="my-4 bg-secondary" />
+        <div class="row">
+          <div class="col-md-6 text-center text-md-start">
+            <p class="mb-0">
+              &copy; 2025 TP Mobile Hub. Tất cả quyền được bảo lưu.
+            </p>
+          </div>
+          <div class="col-md-6 text-center text-md-end">
+            <a href="#" class="text-white-50 me-3">Chính sách Bảo mật</a>
+            <a href="#" class="text-white-50 me-3">Điều khoản Dịch vụ</a>
+            <a href="#" class="text-white-50">Chính sách Vận chuyển</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <a href="#" id="backToTop" class="back-to-top">
+      <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- ScrollReveal -->
+    <script src="https://unpkg.com/scrollreveal"></script>
+    <!-- Custom JS -->
+    <script src="js/script.js"></script>
+  </body>
+</html>

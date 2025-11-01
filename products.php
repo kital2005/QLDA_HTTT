@@ -1,0 +1,584 @@
+<?php
+// Bắt đầu session nếu chưa có
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+// Bảo mật: Chỉ admin mới được truy cập
+if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
+    header("location: index.php");
+    exit;
+}
+
+require_once "config.php";
+
+// Lấy từ khóa tìm kiếm
+$search_term = trim($_GET['search'] ?? '');
+
+// Xây dựng câu truy vấn sản phẩm
+$products = [];
+$sql = "SELECT * FROM products";
+$params = [];
+$types = '';
+
+if (!empty($search_term)) {
+    $sql .= " WHERE LOWER(name) LIKE ?";
+    $search_like = '%' . strtolower($search_term) . '%';
+    $params[] = &$search_like;
+    $types .= 's';
+}
+
+$sql .= " ORDER BY id DESC";
+
+$stmt = $conn->prepare($sql);
+if (!empty($search_term)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $products[] = $row;
+    }
+}
+
+// Truy vấn lấy tất cả danh mục/hãng để hiển thị trong modal
+$categories = [];
+$sql_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$result_categories = $conn->query($sql_categories);
+if ($result_categories->num_rows > 0) {
+    while ($row_cat = $result_categories->fetch_assoc()) {
+        $categories[] = $row_cat;
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="vi" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý sản phẩm - Admin Panel</title>
+    <link rel="icon" href="images/logo-web.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+<body class="d-flex flex-column min-vh-100">
+    <header class="sticky-top">
+      <nav class="navbar navbar-expand-lg">
+        <div class="container">
+          <a href="index.php"><img src="./images/logo-web.png" alt="Tech Phone Logo" class="logo-web"> <img src="./images/name-website.png" alt="Tech Phone" class="logo-web"></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+              <li class="nav-item"><a class="nav-link" href="index.php"><i class="fas fa-home me-1"></i>Xem trang web</a></li>
+              <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?> (Admin)
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                      <li><a class="dropdown-item" href="admin.php"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Admin Dashboard</a></li>
+                      <li><a class="dropdown-item" href="account.php"><i class="fas fa-user-circle fa-fw me-2"></i>Tài khoản của tôi</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt fa-fw me-2"></i>Đăng xuất</a></li>
+                  </ul>
+              </li>
+            </ul>
+            <div class="ms-3 d-flex align-items-center">
+              <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="fas fa-moon"></i></button>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Products Management -->
+    <main class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Quản lý sản phẩm</h2>
+            <div class="d-flex">
+                <form action="products.php" method="GET" class="d-flex me-2">
+                    <input type="text" name="search" class="form-control form-control-sm me-2" placeholder="Tìm kiếm..." value="<?php echo htmlspecialchars($search_term); ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-search"></i></button>
+                </form>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" data-action="add">
+                    <i class="fas fa-plus"></i> Thêm sản phẩm
+                </button>
+            </div>
+        </div>
+
+        <?php
+        if (isset($_SESSION['message'])) {
+            echo '<div class="alert alert-' . $_SESSION['message_type'] . ' alert-dismissible fade show" role="alert">'
+                . $_SESSION['message'] .
+                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>';
+            unset($_SESSION['message']);
+            unset($_SESSION['message_type']);
+        }
+        ?>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-primary">
+                    <tr>
+                        <th>ID</th>
+                        <th>Hình ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th>Giá gốc</th>
+                        <th style="width: 15%;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($products)): ?>
+                        <?php foreach ($products as $product): ?>
+                            <tr>
+                                <td><?php echo $product['id']; ?></td>
+                                <td><img src="<?php echo htmlspecialchars($product['mainImage']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" width="50" class="img-thumbnail"></td>
+                                <td><?php echo htmlspecialchars($product['name']); ?></td>
+                                <td><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</td>
+                                <td><?php echo number_format($product['originalPrice'], 0, ',', '.'); ?>₫</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning edit-btn" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#productModal"
+                                            data-id="<?php echo $product['id']; ?>"
+                                            data-name="<?php echo htmlspecialchars($product['name']); ?>"
+                                            data-description="<?php echo htmlspecialchars($product['description']); ?>"
+                                            data-price="<?php echo $product['price']; ?>"
+                                            data-originalprice="<?php echo $product['originalPrice']; ?>"
+                                            data-mainimage="<?php echo htmlspecialchars($product['mainImage']); ?>"
+                                            data-details="<?php echo htmlspecialchars($product['details']); ?>"
+                                            data-category_id="<?php echo $product['category_id']; ?>"
+                                            data-images="<?php echo htmlspecialchars($product['images'] ?? '[]'); ?>"
+                                            data-variants="<?php echo htmlspecialchars($product['variants'] ?? '[]'); ?>"
+                                            data-article_content="<?php echo htmlspecialchars($product['article_content'] ?? ''); ?>"
+                                            data-action="edit">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <a href="product_actions.php?action=delete&id=<?php echo $product['id']; ?>" 
+                                       class="btn btn-sm btn-danger" 
+                                       onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?');">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="6" class="text-center">Chưa có sản phẩm nào.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Product Modal (for Add/Edit) -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="product_actions.php" method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="productModalLabel">Thêm sản phẩm mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="action" id="modalAction" value="add">
+                        <input type="hidden" name="id" id="modalProductId">
+
+                        <div class="mb-3">
+                            <label for="modalName" class="form-label">Tên sản phẩm</label>
+                            <input type="text" class="form-control" id="modalName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalCategory" class="form-label">Hãng/Danh mục</label>
+                            <select class="form-select" id="modalCategory" name="category_id">
+                                <option value="">-- Chọn hãng --</option>
+                                <?php if (!empty($categories)): ?>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo $category['id']; ?>">
+                                            <?php echo htmlspecialchars($category['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="modalPrice" class="form-label">Giá bán</label>
+                                <input type="number" step="1000" class="form-control" id="modalPrice" name="price" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="modalOriginalPrice" class="form-label">Giá gốc (nếu có)</label>
+                                <input type="number" step="1000" class="form-control" id="modalOriginalPrice" name="originalPrice">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalMainImage" class="form-label">Đường dẫn hình ảnh chính</label>
+                            <input type="text" class="form-control" id="modalMainImage" name="mainImage" placeholder="Ví dụ: ./images/sp/ten-sp.jpg" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalDescription" class="form-label">Mô tả ngắn</label>
+                            <textarea class="form-control" id="modalDescription" name="description" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Các hình ảnh khác</label>
+                            <div id="imagesContainer" class="p-3 border rounded">
+                                <!-- Các ô nhập hình ảnh sẽ được thêm vào đây -->
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addImageBtn"><i class="fas fa-plus"></i> Thêm ảnh</button>
+                            <input type="hidden" name="images" id="modalImages">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Các phiên bản sản phẩm (Màu sắc, Dung lượng, Giá)</label>
+                            <div id="variantsContainer" class="p-3 border rounded">
+                                <!-- Các phiên bản sẽ được thêm vào đây -->
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addVariantBtn"><i class="fas fa-plus"></i> Thêm phiên bản</button>
+                            <input type="hidden" name="variants" id="modalVariants">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Thông số kỹ thuật chi tiết</label>
+                            <div id="specsContainer" class="p-3 border rounded">
+                                <!-- Các nhóm thông số sẽ được thêm vào đây bằng JavaScript -->
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addSpecGroupBtn">
+                                <i class="fas fa-plus"></i> Thêm nhóm thông số
+                            </button>
+                            <!-- Input ẩn để lưu trữ dữ liệu JSON -->
+                            <input type="hidden" name="details" id="modalDetails">
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalArticleContent" class="form-label">Thông tin sản phẩm (Bài viết giới thiệu)</label>
+                            <p class="small text-muted">Soạn thảo bài viết giới thiệu chi tiết về sản phẩm. Bạn có thể sử dụng các thẻ HTML cơ bản như &lt;h4&gt;, &lt;p&gt;, &lt;b&gt; để định dạng.</p>
+                            <textarea class="form-control" id="modalArticleContent" name="article_content" rows="10"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary" id="modalSubmitButton">Lưu sản phẩm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer py-5 bg-dark text-white mt-auto">
+      <div class="container text-center">
+        <p class="mb-0">&copy; <?php echo date('Y'); ?> TP Tech Phone. Tất cả quyền được bảo lưu.</p>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/script.js"></script>
+    <!-- SortableJS để kéo thả -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        // --- TEMPLATE THÔNG SỐ KỸ THUẬT MẶC ĐỊNH ---
+        const defaultSpecsTemplate = {
+            "Màn hình": {
+                "Công nghệ màn hình": "",
+                "Độ phân giải": "",
+                "Màn hình rộng": "",
+                "Độ sáng tối đa": "",
+                "Mặt kính cảm ứng": ""
+            },
+            "Camera": {
+                "Camera sau": "",
+                "Camera trước": "",
+                "Quay phim": "",
+                "Tính năng camera": ""
+            },
+            "Hệ điều hành & CPU": {
+                "Hệ điều hành": "",
+                "Chip xử lý (CPU)": "",
+                "Tốc độ CPU": "",
+                "Chip đồ họa (GPU)": ""
+            },
+            "Bộ nhớ & Lưu trữ": {
+                "RAM": "",
+                "Dung lượng lưu trữ": "",
+                "Thẻ nhớ": ""
+            },
+            "Kết nối": {
+                "Mạng di động": "",
+                "SIM": "",
+                "Wifi": "",
+                "Bluetooth": "",
+                "Cổng kết nối/sạc": "",
+                "Jack tai nghe": ""
+            }
+        };
+
+        const productModal = document.getElementById('productModal');
+        productModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const action = button.getAttribute('data-action');
+
+            const modalTitle = productModal.querySelector('.modal-title');
+            const modalSubmitButton = productModal.querySelector('#modalSubmitButton');
+            const modalActionInput = productModal.querySelector('#modalAction');
+            
+            const idInput = productModal.querySelector('#modalProductId');
+            const nameInput = productModal.querySelector('#modalName');
+            const descriptionInput = productModal.querySelector('#modalDescription');
+            const priceInput = productModal.querySelector('#modalPrice');
+            const originalPriceInput = productModal.querySelector('#modalOriginalPrice');
+            const mainImageInput = productModal.querySelector('#modalMainImage');
+            const categoryInput = productModal.querySelector('#modalCategory');
+            const detailsInput = productModal.querySelector('#modalDetails'); // Input ẩn
+            const imagesInput = productModal.querySelector('#modalImages'); // Input ẩn cho các ảnh khác
+            const variantsInput = productModal.querySelector('#modalVariants'); // Input ẩn cho các phiên bản
+            const articleContentInput = productModal.querySelector('#modalArticleContent');
+
+            if (action === 'edit') {
+                modalTitle.textContent = 'Sửa thông tin sản phẩm';
+                modalSubmitButton.textContent = 'Lưu thay đổi';
+                modalActionInput.value = 'edit';
+
+                // Lấy dữ liệu từ nút "Sửa" và điền vào form
+                idInput.value = button.getAttribute('data-id');
+                nameInput.value = button.getAttribute('data-name');
+                descriptionInput.value = button.getAttribute('data-description');
+                priceInput.value = button.getAttribute('data-price');
+                originalPriceInput.value = button.getAttribute('data-originalprice');
+                mainImageInput.value = button.getAttribute('data-mainimage');
+                categoryInput.value = button.getAttribute('data-category_id');
+                articleContentInput.value = button.getAttribute('data-article_content');
+
+                renderImages(button.getAttribute('data-images'));
+                renderVariants(button.getAttribute('data-variants'));
+                
+                // Giải mã JSON và render ra form
+                try {
+                    const savedData = JSON.parse(button.getAttribute('data-details'));
+                    // Gộp dữ liệu đã lưu vào template để đảm bảo các trường cũ vẫn hiển thị
+                    const mergedData = { ...defaultSpecsTemplate, ...savedData };
+                    renderSpecs(mergedData, savedData);
+                } catch (e) {
+                    // Nếu dữ liệu cũ không phải JSON, render template mặc định
+                    renderSpecs(defaultSpecsTemplate);
+                    console.error("Dữ liệu cũ không phải JSON, hiển thị template mặc định.");
+                }
+            } else {
+                modalTitle.textContent = 'Thêm sản phẩm mới';
+                modalSubmitButton.textContent = 'Thêm sản phẩm';
+                modalActionInput.value = 'add';
+
+                // Xóa trống form khi thêm mới
+                idInput.value = '';
+                nameInput.value = '';
+                descriptionInput.value = '';
+                priceInput.value = '';
+                originalPriceInput.value = '';
+                mainImageInput.value = '';
+                categoryInput.value = '';
+                articleContentInput.value = '';
+
+                // Xóa các trường động
+                $('#imagesContainer').empty();
+                $('#variantsContainer').empty();
+                
+                // Render template mặc định cho sản phẩm mới
+                renderSpecs(defaultSpecsTemplate);
+            }
+        });
+
+        // --- LOGIC CHO THÔNG SỐ KỸ THUẬT ĐỘNG ---
+        // --- LOGIC CHO HÌNH ẢNH PHỤ ---
+        const imagesContainer = $('#imagesContainer');
+        $('#addImageBtn').on('click', function() {
+            addImageItem();
+        });
+        imagesContainer.on('click', '.delete-image-btn', function() {
+            $(this).closest('.image-item').remove();
+        });
+
+        function addImageItem(path = '') {
+            const itemHtml = `
+                <div class="image-item input-group input-group-sm mb-2">
+                    <input type="text" class="form-control image-path" placeholder="Đường dẫn ảnh (ví dụ: ./images/sp/anh-phu.jpg)" value="${path}">
+                    <button class="btn btn-outline-danger delete-image-btn" type="button"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+            imagesContainer.append(itemHtml);
+        }
+
+        function renderImages(jsonString) {
+            imagesContainer.empty();
+            try {
+                const paths = JSON.parse(jsonString);
+                if (Array.isArray(paths)) {
+                    paths.forEach(path => addImageItem(path));
+                }
+            } catch (e) { console.error("Lỗi parse JSON ảnh:", e); }
+        }
+
+        // --- LOGIC CHO PHIÊN BẢN SẢN PHẨM ---
+        const variantsContainer = $('#variantsContainer');
+        $('#addVariantBtn').on('click', function() {
+            addVariantItem();
+        });
+        variantsContainer.on('click', '.delete-variant-btn', function() {
+            $(this).closest('.variant-item').remove();
+        });
+
+        function addVariantItem(variant = {}) {
+            const itemHtml = `
+                <div class="variant-item card card-body mb-2 p-2">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-3"><input type="text" class="form-control form-control-sm variant-color" placeholder="Màu sắc" value="${variant.color || ''}"></div>
+                        <div class="col-md-2"><input type="text" class="form-control form-control-sm variant-storage" placeholder="Dung lượng" value="${variant.storage || ''}"></div>
+                        <div class="col-md-3"><input type="number" class="form-control form-control-sm variant-price" placeholder="Giá bán" value="${variant.price || ''}"></div>
+                        <div class="col-md-3"><input type="number" class="form-control form-control-sm variant-originalPrice" placeholder="Giá gốc" value="${variant.originalPrice || ''}"></div>
+                        <div class="col-md-1 text-end"><button class="btn btn-sm btn-outline-danger delete-variant-btn" type="button"><i class="fas fa-times"></i></button></div>
+                    </div>
+                </div>
+            `;
+            variantsContainer.append(itemHtml);
+        }
+
+        function renderVariants(jsonString) {
+            variantsContainer.empty();
+            try {
+                const variants = JSON.parse(jsonString);
+                if (Array.isArray(variants)) {
+                    variants.forEach(variant => addVariantItem(variant));
+                }
+            } catch (e) { console.error("Lỗi parse JSON phiên bản:", e); }
+        }
+
+
+        const specsContainer = $('#specsContainer');
+
+        // Thêm nhóm mới
+        $('#addSpecGroupBtn').on('click', function() {
+            addSpecGroup();
+        });
+
+        // Thêm thông số trong nhóm
+        specsContainer.on('click', '.add-spec-btn', function() {
+            const specItemsContainer = $(this).closest('.spec-group').find('.spec-items');
+            addSpecItem(specItemsContainer);
+        });
+
+        // Xóa nhóm hoặc thông số
+        specsContainer.on('click', '.delete-btn', function() {
+            $(this).closest('.spec-group, .spec-item').remove();
+        });
+
+        // Hàm thêm một nhóm thông số
+        function addSpecGroup(groupName = '', specs = {}) {
+            const groupId = 'group-' + Date.now();
+            const groupHtml = `
+                <div class="spec-group card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center p-2">
+                        <input type="text" class="form-control form-control-sm fw-bold group-name-input" placeholder="Tên nhóm (ví dụ: Màn hình)" value="${groupName}">
+                        <button type="button" class="btn btn-sm btn-danger delete-btn ms-2"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="spec-items"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary add-spec-btn mt-2"><i class="fas fa-plus"></i> Thêm thông số</button>
+                    </div>
+                </div>
+            `;
+            const groupElement = $(groupHtml);
+            specsContainer.append(groupElement);
+            
+            // Thêm các spec item nếu có
+            const specItemsContainer = groupElement.find('.spec-items');
+            for (const key in specs) {
+                addSpecItem(specItemsContainer, key, specs[key]);
+            }
+        }
+
+        // Hàm thêm một thông số (key-value)
+        function addSpecItem(container, key = '', value = '') {
+            const itemHtml = `
+                <div class="spec-item input-group input-group-sm mb-2">
+                    <input type="text" class="form-control spec-key" placeholder="Tên thông số" value="${key}">
+                    <input type="text" class="form-control spec-value" placeholder="Giá trị" value="${value}">
+                    <button class="btn btn-outline-danger delete-btn" type="button"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+            container.append(itemHtml);
+        }
+
+        // Hàm render form từ chuỗi JSON
+        function renderSpecs(templateData, savedData = {}) {
+            specsContainer.empty();
+            try {
+                for (const groupName in templateData) {
+                    const specs = savedData[groupName] || templateData[groupName];
+                    addSpecGroup(groupName, specs);
+                }
+            } catch (e) {
+                console.error("Lỗi render thông số:", e);
+            }
+        }
+
+        // Thu thập dữ liệu từ form và chuyển thành JSON trước khi submit
+        $('#productModal form').on('submit', function() {
+            // Thu thập hình ảnh
+            const imagesData = [];
+            $('.image-path').each(function() {
+                const path = $(this).val().trim();
+                if (path) {
+                    imagesData.push(path);
+                }
+            });
+            $('#modalImages').val(JSON.stringify(imagesData));
+
+            // Thu thập phiên bản
+            const variantsData = [];
+            $('.variant-item').each(function() {
+                const variant = {
+                    color: $(this).find('.variant-color').val().trim(),
+                    storage: $(this).find('.variant-storage').val().trim(),
+                    price: $(this).find('.variant-price').val().trim(),
+                    originalPrice: $(this).find('.variant-originalPrice').val().trim()
+                };
+                if (variant.color || variant.storage || variant.price) {
+                    variantsData.push(variant);
+                }
+            });
+            $('#modalVariants').val(JSON.stringify(variantsData));
+
+            const specsData = {};
+            $('.spec-group').each(function() {
+                const groupName = $(this).find('.group-name-input').val().trim();
+                if (groupName) {
+                    const items = {};
+                    $(this).find('.spec-item').each(function() {
+                        const key = $(this).find('.spec-key').val().trim();
+                        const value = $(this).find('.spec-value').val().trim();
+                        if (key && value) {
+                            items[key] = value;
+                        }
+                    });
+                    if (Object.keys(items).length > 0) {
+                        specsData[groupName] = items;
+                    }
+                }
+            });
+            // Gán chuỗi JSON vào input ẩn
+            $('#modalDetails').val(JSON.stringify(specsData));
+        });
+
+        // Kích hoạt kéo thả
+        new Sortable(specsContainer[0], {
+            animation: 150,
+            handle: '.card-header', // Chỉ kéo thả được khi nhấn vào header của group
+            ghostClass: 'bg-info'
+        });
+    });
+    </script>
+</body>
+</html>

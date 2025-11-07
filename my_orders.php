@@ -18,6 +18,22 @@ $result = $stmt->get_result();
 $orders = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 $conn->close();
+// Lấy tất cả danh mục để hiển thị trong navigation
+// Đảm bảo config.php đã được include ở đầu file
+
+$accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
+
+$phone_categories_nav = [];
+$accessory_categories_nav = [];
+
+$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$result_nav_categories = $conn->query($sql_nav_categories);
+if ($result_nav_categories) {
+    while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
+        if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+        else $phone_categories_nav[] = $row_nav_cat;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
@@ -40,20 +56,29 @@ $conn->close();
             <ul class="navbar-nav ms-auto">
               <li class="nav-item"><a class="nav-link" href="index.php">Trang chủ</a></li>
               <li class="nav-item"><a class="nav-link" href="sanpham.php">Sản phẩm</a></li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Sản phẩm</a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><h6 class="dropdown-header">Điện thoại</h6></li>
+                  <?php foreach ($phone_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><h6 class="dropdown-header">Phụ kiện</h6></li>
+                  <?php foreach ($accessory_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><a class="dropdown-item" href="sanpham.php"><i class="fas fa-list fa-fw me-2"></i>Xem tất cả sản phẩm</a></li>
+                </ul>
+              </li>
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
                       </a>
-                      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
-                          <li><a class="dropdown-item" href="account.php">Tài khoản của tôi</a></li>
-                          <li><a class="dropdown-item active" href="my_orders.php">Đơn hàng của tôi</a></li>
-                          <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                            <li><a class="dropdown-item" href="admin.php"><i class="fas fa-cogs fa-fw me-2"></i>Trang quản trị</a></li>
-                          <?php endif; ?>
-                          <li><hr class="dropdown-divider"></li>
-                          <li><a class="dropdown-item" href="logout.php">Đăng xuất</a></li>
-                      </ul>
                   </li>
               <?php else: ?>
                   <li class="nav-item"><a class="nav-link" href="login.php">Đăng nhập</a></li>

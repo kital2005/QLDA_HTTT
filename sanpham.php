@@ -8,6 +8,25 @@ $category_id = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $sort_order = $_GET['sort'] ?? 'newest';
 $condition = $_GET['condition'] ?? 'all'; // Thêm bộ lọc tình trạng (mới/cũ)
 
+// Định nghĩa các ID danh mục phụ kiện (cần khớp với CSDL của bạn)
+$accessory_category_ids = [5, 6, 7, 8]; // Ví dụ: 5=Tai nghe, 6=Sạc dự phòng, 7=Ốp lưng, 8=Cáp sạc
+
+// Lấy tất cả danh mục để hiển thị trong navigation
+$phone_categories_nav = [];
+$accessory_categories_nav = [];
+
+$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$result_nav_categories = $conn->query($sql_nav_categories);
+if ($result_nav_categories) {
+    while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
+        if (in_array($row_nav_cat['id'], $accessory_category_ids)) {
+            $accessory_categories_nav[] = $row_nav_cat;
+        } else {
+            $phone_categories_nav[] = $row_nav_cat;
+        }
+    }
+}
+
 // --- LẤY DANH SÁCH HÃNG ĐỂ HIỂN THỊ TRONG BỘ LỌC ---
 $categories = [];
 $sql_categories = "SELECT id, name FROM categories ORDER BY name ASC";
@@ -21,7 +40,7 @@ if ($result_categories->num_rows > 0) {
 // --- XÂY DỰNG CÂU TRUY VẤN SQL ĐỘNG ---
 $sql = "SELECT id, name, description, price, originalPrice, rating, reviews, mainImage, is_new FROM products WHERE 1=1";
 $params = [];
-$types = '';
+$types = ''; // Khởi tạo lại $types cho truy vấn chính
 
 if (!empty($search_term)) {
     $sql .= " AND LOWER(name) LIKE ?";
@@ -29,14 +48,44 @@ if (!empty($search_term)) {
     $types .= 's';
 }
 if ($category_id > 0) {
+    // Nếu có category_id cụ thể, ưu tiên lọc theo category_id
     $sql .= " AND category_id = ?";
     $params[] = $category_id;
     $types .= 'i';
 }
-if ($condition === 'new') {
+
+// Lọc theo type (phone/accessory) nếu không có category_id cụ thể
+$product_type = $_GET['type'] ?? '';
+if ($category_id == 0) { // Chỉ áp dụng type filter nếu không có category_id cụ thể
+    if ($product_type === 'phone') {
+        if (!empty($accessory_category_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($accessory_category_ids), '?'));
+            $sql .= " AND category_id NOT IN ($ids_placeholder)";
+            $params = array_merge($params, $accessory_category_ids);
+            $types .= str_repeat('i', count($accessory_category_ids));
+        }
+    } elseif ($product_type === 'accessory') {
+        if (!empty($accessory_category_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($accessory_category_ids), '?'));
+            $sql .= " AND category_id IN ($ids_placeholder)";
+            $params = array_merge($params, $accessory_category_ids);
+            $types .= str_repeat('i', count($accessory_category_ids));
+        }
+    }
+}
+
+// Logic mới cho bộ lọc "Tình trạng"
+if (in_array($category_id, $accessory_category_ids)) {
+    // Nếu là phụ kiện, chỉ hiển thị sản phẩm mới (không cần đồ cũ)
     $sql .= " AND is_new = 1";
-} elseif ($condition === 'old') {
-    $sql .= " AND is_new = 0";
+    $condition = 'new'; // Đặt mặc định là 'new' cho phụ kiện
+} else {
+    // Nếu không phải phụ kiện, áp dụng bộ lọc tình trạng như bình thường
+    if ($condition === 'new') {
+        $sql .= " AND is_new = 1";
+    } elseif ($condition === 'old') {
+        $sql .= " AND is_new = 0";
+    }
 }
 
 // Xử lý sắp xếp
@@ -90,10 +139,20 @@ switch ($sort_order) {
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Sản phẩm</a>
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-mobile-alt fa-fw me-2"></i>Điện thoại</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-tablet-alt fa-fw me-2"></i>Máy tính bảng</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-stopwatch fa-fw me-2"></i>Thiết bị đeo</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-headphones fa-fw me-2"></i>Phụ kiện</a></li>
+                  <li><h6 class="dropdown-header">Điện thoại</h6></li>
+                  <?php foreach ($phone_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
+                  
+                  <li><hr class="dropdown-divider" /></li>
+                  
+                  <li><h6 class="dropdown-header">Phụ kiện</h6></li>
+                  <?php foreach ($accessory_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
+
                   <li><hr class="dropdown-divider" /></li>
                   <li><a class="dropdown-item" href="sanpham.php"><i class="fas fa-list fa-fw me-2"></i>Xem tất cả sản phẩm</a></li>
                 </ul>
@@ -139,7 +198,7 @@ switch ($sort_order) {
         <!-- Ghi chú: Form tìm kiếm và bộ lọc -->
         <form action="sanpham.php" method="GET" class="mb-5">
             <div class="row g-3 justify-content-end">
-                <div class="col-lg-3 col-md-4">
+                <div class="col-lg-3 col-md-4" id="categoryFilterContainer">
                     <select name="category" class="form-select">
                         <option value="0">Tất cả hãng</option>
                         <?php foreach ($categories as $category): ?>
@@ -149,7 +208,7 @@ switch ($sort_order) {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-4">
+                <div class="col-lg-3 col-md-4" id="conditionFilterContainer">
                     <select name="condition" class="form-select">
                         <option value="all" <?php if ($condition == 'all') echo 'selected'; ?>>Tất cả tình trạng</option>
                         <option value="new" <?php if ($condition == 'new') echo 'selected'; ?>>Sản phẩm mới</option>
@@ -327,5 +386,30 @@ switch ($sort_order) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/script.js"></script> 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const categorySelect = document.querySelector('select[name="category"]');
+            const conditionFilterContainer = document.getElementById('conditionFilterContainer');
+            const conditionSelect = document.querySelector('select[name="condition"]');
+
+            // Các ID danh mục phụ kiện (cần khớp với PHP)
+            const accessoryCategoryIds = [5, 6, 7, 8]; 
+
+            function toggleConditionFilter() {
+                const selectedCategoryId = parseInt(categorySelect.value);
+                if (accessoryCategoryIds.includes(selectedCategoryId)) {
+                    conditionFilterContainer.style.display = 'none';
+                    // Đặt giá trị mặc định cho tình trạng là 'new' khi ẩn đi
+                    conditionSelect.value = 'new'; 
+                } else {
+                    conditionFilterContainer.style.display = 'block';
+                }
+            }
+
+            // Gọi hàm khi trang tải và khi danh mục thay đổi
+            toggleConditionFilter();
+            categorySelect.addEventListener('change', toggleConditionFilter);
+        });
+    </script>
   </body>
 </html>

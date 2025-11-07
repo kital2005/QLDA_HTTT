@@ -1,6 +1,24 @@
 <?php
 session_start();
 ?>
+<?php
+// Lấy tất cả danh mục để hiển thị trong navigation
+require_once 'config.php'; // Đảm bảo config.php đã được include
+
+$accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
+
+$phone_categories_nav = [];
+$accessory_categories_nav = [];
+
+$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$result_nav_categories = $conn->query($sql_nav_categories);
+if ($result_nav_categories) {
+    while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
+        if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+        else $phone_categories_nav[] = $row_nav_cat;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
   <head>
@@ -61,10 +79,20 @@ session_start();
                   Sản phẩm
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-mobile-alt fa-fw me-2"></i>Điện thoại</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-tablet-alt fa-fw me-2"></i>Máy tính bảng</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-stopwatch fa-fw me-2"></i>Thiết bị đeo</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-headphones fa-fw me-2"></i>Phụ kiện</a></li>
+                  <li><h6 class="dropdown-header">Điện thoại</h6></li>
+                  <?php foreach ($phone_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
+                  
+                  <li><hr class="dropdown-divider" /></li>
+                  
+                  <li><h6 class="dropdown-header">Phụ kiện</h6></li>
+                  <?php foreach ($accessory_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
+
                   <li><hr class="dropdown-divider" /></li>
                   <li><a class="dropdown-item" href="sanpham.php"><i class="fas fa-list fa-fw me-2"></i>Xem tất cả sản phẩm</a></li>
                 </ul>
@@ -182,37 +210,93 @@ session_start();
       </div>
     </section>
 
-    <!-- Flash Sale Section -->
+    <!-- Flash Sale Section (Dynamic) -->
     <section id="flash-sale" class="flash-sale-section py-5">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-lg-6 text-center mb-4 mb-lg-0 flash-sale-image">
-            <img
-              src="./images/sp/samsung/Samsung S24 Ultra/samsung-galaxy-s24-ultra-xam-titan.jpg"
-              alt="Flash Sale Product"
-              class="img-fluid rounded shadow-lg"
-            />
-          </div>
-          <div class="col-lg-6">
-            <div class="flash-sale-content">
-              <h4 class="text-primary fw-bold">FLASH SALE</h4>
-              <h2 class="display-5 fw-bold mb-3">Galaxy S24 Ultra - Giảm Sốc!</h2>
-              <p class="lead text-muted">
-                Cơ hội duy nhất để sở hữu siêu phẩm với mức giá không tưởng. Số
-                lượng có hạn!
-              </p>
-              <div class="price mb-3">
-                <span class="current-price fs-3">25.990.000₫</span>
-                <span class="original-price fs-5">31.990.000₫</span>
-              </div>
-              <div id="countdown" class="countdown-timer mb-4"></div>
-              <a href="#" class="btn btn-primary btn-lg"
-                ><i class="fas fa-bolt me-2"></i>Mua Ngay</a
-              >
-            </div>
-          </div>
+    <div class="container">
+        <!-- THAY ĐỔI: Tiêu đề sẽ được thay đổi bằng hiệu ứng gõ chữ từ JS -->
+        <div class="section-header text-center mb-5">
+            <h2 class="section-title"><i class="fas fa-bolt text-warning"></i> <span id="typed-flash-sale"></span></h2>
+            <p class="section-subtitle">Ưu đãi chớp nhoáng, đừng bỏ lỡ!</p>
         </div>
-      </div>
+
+        <?php
+        // Lấy sản phẩm điện thoại đang Flash Sale
+        $flash_sale_phone = null;
+        $accessory_ids_string = implode(',', $accessory_category_ids);
+        $sql_phone_fs = "SELECT * FROM products WHERE is_flash_sale = 1 AND category_id NOT IN ($accessory_ids_string) LIMIT 1";
+        $result_phone_fs = $conn->query($sql_phone_fs);
+        if ($result_phone_fs && $result_phone_fs->num_rows > 0) {
+            $flash_sale_phone = $result_phone_fs->fetch_assoc();
+        }
+
+        // Lấy tối đa 2 phụ kiện đang Flash Sale
+        $flash_sale_accessories = [];
+        $sql_acc_fs = "SELECT * FROM products WHERE is_flash_sale = 1 AND category_id IN ($accessory_ids_string) LIMIT 2";
+        $result_acc_fs = $conn->query($sql_acc_fs);
+        if ($result_acc_fs && $result_acc_fs->num_rows > 0) {
+            $flash_sale_accessories = $result_acc_fs->fetch_all(MYSQLI_ASSOC);
+        }
+        ?>
+
+        <?php if ($flash_sale_phone): ?>
+            <!-- Main Flash Sale Product (Phone) -->
+            <div class="card shadow-lg border-0 mb-5">
+                <div class="row g-0 align-items-center">
+                    <div class="col-lg-5 text-center p-4 position-relative">
+                        <img src="<?php echo htmlspecialchars($flash_sale_phone['mainImage']); ?>" alt="<?php echo htmlspecialchars($flash_sale_phone['name']); ?>" class="img-fluid rounded-3 flash-sale-image" />
+                        <!-- THÊM MỚI: Huy hiệu giảm giá, có z-index để không bị che -->
+                        <?php if (!empty($flash_sale_phone['flash_sale_discount']) && $flash_sale_phone['flash_sale_discount'] > 0): ?>
+                            <div class="badge bg-danger text-white position-absolute" style="top: 1.5rem; right: 1.5rem; font-size: 1.2rem; padding: 0.8rem; transform: rotate(15deg); z-index: 10;">
+                                -<?php echo round($flash_sale_phone['flash_sale_discount']); ?>%
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="card-body p-4 p-lg-5">
+                            <h3 class="card-title fw-bold"><?php echo htmlspecialchars($flash_sale_phone['name']); ?></h3>
+                            <p class="card-text text-muted mb-3"><?php echo htmlspecialchars($flash_sale_phone['description']); ?></p>
+                            <div class="price mb-3">
+                                <span class="current-price fs-2 text-danger fw-bold"><?php echo number_format($flash_sale_phone['price'], 0, ',', '.'); ?>₫</span>
+                                <?php if ($flash_sale_phone['originalPrice'] && $flash_sale_phone['originalPrice'] > $flash_sale_phone['price']): ?>
+                                    <span class="original-price fs-5 text-decoration-line-through text-muted ms-2"><?php echo number_format($flash_sale_phone['originalPrice'], 0, ',', '.'); ?>₫</span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="fw-bold">Kết thúc sau:</p>
+                            <div id="countdown" class="countdown-timer mb-4"></div>
+                            <a href="chitietsanpham.php?id=<?php echo $flash_sale_phone['id']; ?>" class="btn btn-danger btn-lg"><i class="fas fa-shopping-cart me-2"></i>Mua Ngay</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accessory Flash Sale Products -->
+            <?php if (!empty($flash_sale_accessories)): ?>
+                <h4 class="text-center mb-4">Mua kèm deal sốc</h4>
+                <div class="row g-4 justify-content-center">
+                    <?php foreach ($flash_sale_accessories as $accessory): ?>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card product-card h-100 position-relative">
+                                <!-- THÊM MỚI: Huy hiệu giảm giá cho phụ kiện, có z-index -->
+                                <?php if (!empty($accessory['flash_sale_discount']) && $accessory['flash_sale_discount'] > 0): ?>
+                                    <div class="badge bg-danger text-white position-absolute" style="top: 10px; right: 10px; font-size: 0.9rem; transform: rotate(10deg); z-index: 10;">
+                                        -<?php echo round($accessory['flash_sale_discount']); ?>%
+                                    </div>
+                                <?php endif; ?>
+                                <a href="chitietsanpham.php?id=<?php echo $accessory['id']; ?>"><img src="<?php echo htmlspecialchars($accessory['mainImage']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($accessory['name']); ?>" /></a>
+                                <div class="card-body text-center">
+                                    <h5 class="card-title fs-6"><?php echo htmlspecialchars($accessory['name']); ?></h5>
+                                    <div class="price"><span class="current-price"><?php echo number_format($accessory['price'], 0, ',', '.'); ?>₫</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+        <?php else: ?>
+            <div class="text-center p-5 bg-light rounded-3"><h3 class="text-muted">Chưa có chương trình Flash Sale nào.</h3><p>Vui lòng quay lại sau nhé!</p></div>
+        <?php endif; ?>
+    </div>
     </section>
 
     <!-- Products Section -->
@@ -963,6 +1047,8 @@ session_start();
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- ScrollReveal -->
     <script src="https://unpkg.com/scrollreveal"></script>
+    <!-- THÊM MỚI: Thư viện Typed.js cho hiệu ứng gõ chữ (từ CDN) -->
+    <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
     <!-- Custom JS -->
     <script src="js/script.js"></script>
   </body>

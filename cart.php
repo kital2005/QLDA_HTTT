@@ -87,6 +87,22 @@ if (!empty($_SESSION['cart'])) {
           >
             <span class="navbar-toggler-icon"></span>
           </button>
+          <?php
+            // Lấy tất cả danh mục để hiển thị trong navigation
+            $accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
+            $phone_categories_nav = [];
+            $accessory_categories_nav = [];
+            $sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+            $result_nav_categories = $conn->query($sql_nav_categories);
+            if ($result_nav_categories) {
+                while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
+                    if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+                    else $phone_categories_nav[] = $row_nav_cat;
+                }
+            }
+            $conn->close();
+          ?>
+          </button>
           <div class="collapse navbar-collapse" id="navbarNav">
             <!-- Search Form -->
             <form class="search-container mx-lg-auto my-2 my-lg-0 d-flex" action="sanpham.php" method="GET">
@@ -104,10 +120,20 @@ if (!empty($_SESSION['cart'])) {
                   Sản phẩm
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-mobile-alt fa-fw me-2"></i>Điện thoại</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-tablet-alt fa-fw me-2"></i>Máy tính bảng</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-stopwatch fa-fw me-2"></i>Thiết bị đeo</a></li>
-                  <li><a class="dropdown-item" href="#"><i class="fas fa-headphones fa-fw me-2"></i>Phụ kiện</a></li>
+                  <li><h6 class="dropdown-header">Điện thoại</h6></li>
+                  <?php foreach ($phone_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
+                  
+                  <li><hr class="dropdown-divider"></li>
+                  
+                  <li><h6 class="dropdown-header">Phụ kiện</h6></li>
+                  <?php foreach ($accessory_categories_nav as $cat): ?>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                  <?php endforeach; ?>
+                  <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
+
                   <li><hr class="dropdown-divider"></li>
                   <li><a class="dropdown-item" href="sanpham.php"><i class="fas fa-list fa-fw me-2"></i>Xem tất cả sản phẩm</a></li>
                 </ul>

@@ -1,5 +1,7 @@
 $(document).ready(function () {
-  // Back to Top Button
+  // ===============================================
+  // 1. CHỨC NĂNG CHUNG CHO TOÀN TRANG WEB
+  // ===============================================
   $(window).scroll(function () {
     if ($(this).scrollTop() > 300) {
       $("#backToTop").addClass("show");
@@ -13,7 +15,6 @@ $(document).ready(function () {
     $("html, body").animate({ scrollTop: 0 }, "300");
   });
 
-  // Dark/Light Mode Toggle
   $("#themeToggle").click(function () {
     const currentTheme = $("html").attr("data-bs-theme");
     const newTheme = currentTheme === "dark" ? "light" : "dark";
@@ -26,16 +27,13 @@ $(document).ready(function () {
     localStorage.setItem("themePreference", newTheme);
   });
 
-  // Check for saved theme preference
   const savedTheme = localStorage.getItem("themePreference") || "light";
   $("html").attr("data-bs-theme", savedTheme);
 
-  // Set correct icon based on initial theme
   if (savedTheme === "dark") {
     $("#themeToggle i").removeClass("fa-moon").addClass("fa-sun");
   }
 
-  // Smooth scrolling for navigation links
   $('a[href*="#"]')
     .not('[href="#"]')
     .not('[href="#0"]')
@@ -63,7 +61,6 @@ $(document).ready(function () {
       }
     });
 
-  // Form validation
   $("#contactForm").submit(function (e) {
     if (!this.checkValidity()) {
       e.preventDefault();
@@ -72,7 +69,6 @@ $(document).ready(function () {
     $(this).addClass("was-validated");
   });
 
-  // Initialize ScrollReveal
   const sr = ScrollReveal({
     origin: "bottom",
     distance: "60px",
@@ -81,7 +77,6 @@ $(document).ready(function () {
     reset: false,
   });
 
-  // Configure ScrollReveal animations
   sr.reveal(".hero-content, .hero-image", {
     origin: "left",
     interval: 200,
@@ -107,12 +102,10 @@ $(document).ready(function () {
     distance: "40px",
   });
 
-  // Close mobile menu when clicking a link
   $(".navbar-nav>li>a").on("click", function () {
     $(".navbar-collapse").collapse("hide");
   });
 
-  // Password visibility toggle for login/register forms
   function setupPasswordToggle(toggleId, passwordId) {
     const toggleButton = document.getElementById(toggleId);
     const passwordInput = document.getElementById(passwordId);
@@ -133,11 +126,9 @@ $(document).ready(function () {
     }
   }
 
-  // Apply to login and register forms
   setupPasswordToggle("togglePassword", "password");
   setupPasswordToggle("toggleConfirmPassword", "confirmPassword");
 
-  // Hide Header on scroll down
   let lastScrollTop = 0;
   const header = document.querySelector("header");
 
@@ -158,7 +149,6 @@ $(document).ready(function () {
       }, false);
   }
 
-  // Countdown Timer for Flash Sale
   function setupCountdown() {
     const countdownElement = document.getElementById("countdown");
     if (!countdownElement) return;
@@ -193,7 +183,7 @@ $(document).ready(function () {
   }
 
   setupCountdown();
-});
+
   // =========================================================================
   // === PHẦN 2: SỬA LỖI CODE RIÊNG CHO CÁC TRANG ĐĂNG NHẬP VÀ ĐĂNG KÝ ===
   // =========================================================================
@@ -257,7 +247,7 @@ $(document).ready(function () {
       $(this).addClass("was-validated");
     });
   }
- // ===============================================
+  // ===============================================
   // 4. CHỨC NĂNG TRANG CHI TIẾT SẢN PHẨM
   // ===============================================
 
@@ -304,5 +294,5 @@ $(document).ready(function () {
         form.classList.add('was-validated');
       }, false)
     }
-  })()
-;
+  })();
+});

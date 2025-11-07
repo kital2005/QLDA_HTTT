@@ -13,34 +13,69 @@ require_once "config.php";
 
 // Lấy từ khóa tìm kiếm
 $search_term = trim($_GET['search'] ?? '');
+$filter_type = $_GET['type'] ?? 'all'; // 'all', 'phone', 'accessory'
 
-// Xây dựng câu truy vấn sản phẩm
-$products = [];
-$sql = "SELECT * FROM products";
-$params = [];
-$types = '';
+// Định nghĩa các ID danh mục phụ kiện (cần khớp với CSDL của bạn)
+$accessory_category_ids = [5, 6, 7, 8];
 
-if (!empty($search_term)) {
-    $sql .= " WHERE LOWER(name) LIKE ?";
-    $search_like = '%' . strtolower($search_term) . '%';
-    $params[] = &$search_like;
-    $types .= 's';
-}
+/**
+ * Hàm lấy sản phẩm dựa trên loại và từ khóa tìm kiếm
+ * @param mysqli $conn Đối tượng kết nối CSDL
+ * @param string $type 'phone' hoặc 'accessory'
+ * @param array $accessory_ids Mảng các ID danh mục phụ kiện
+ * @param string $search_term Từ khóa tìm kiếm
+ * @return array Mảng các sản phẩm
+ */
+function getProductsByType($conn, $type, $accessory_ids, $search_term) {
+    $products = [];
+    $sql = "SELECT * FROM products";
+    $conditions = [];
+    $params = [];
+    $types = '';
 
-$sql .= " ORDER BY id DESC";
-
-$stmt = $conn->prepare($sql);
-if (!empty($search_term)) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $products[] = $row;
+    if ($type === 'phone') {
+        if (!empty($accessory_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($accessory_ids), '?'));
+            $conditions[] = "category_id NOT IN ($ids_placeholder)";
+            $params = array_merge($params, $accessory_ids);
+            $types .= str_repeat('i', count($accessory_ids));
+        }
+    } elseif ($type === 'accessory') {
+        if (!empty($accessory_ids)) {
+            $ids_placeholder = implode(',', array_fill(0, count($accessory_ids), '?'));
+            $conditions[] = "category_id IN ($ids_placeholder)";
+            $params = array_merge($params, $accessory_ids);
+            $types .= str_repeat('i', count($accessory_ids));
+        }
     }
+
+    if (!empty($search_term)) {
+        $conditions[] = "LOWER(name) LIKE ?";
+        $params[] = '%' . strtolower($search_term) . '%';
+        $types .= 's';
+    }
+
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(' AND ', $conditions);
+    }
+    $sql .= " ORDER BY id DESC";
+
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result) {
+        $products = $result->fetch_all(MYSQLI_ASSOC);
+    }
+    $stmt->close();
+    return $products;
 }
+
+// Lấy danh sách sản phẩm cho từng loại
+$phone_products = getProductsByType($conn, 'phone', $accessory_category_ids, $search_term);
+$accessory_products = getProductsByType($conn, 'accessory', $accessory_category_ids, $search_term);
 
 // Truy vấn lấy tất cả danh mục/hãng để hiển thị trong modal
 $categories = [];
@@ -102,9 +137,23 @@ if ($result_categories->num_rows > 0) {
                     <input type="text" name="search" class="form-control form-control-sm me-2" placeholder="Tìm kiếm..." value="<?php echo htmlspecialchars($search_term); ?>">
                     <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-search"></i></button>
                 </form>
+
+                <!-- Nút thêm sản phẩm/phụ kiện -->
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" data-action="add">
                     <i class="fas fa-plus"></i> Thêm sản phẩm
                 </button>
+                <!-- THAY ĐỔI: Chuyển thành nút dropdown để thêm các loại phụ kiện -->
+                <div class="btn-group ms-2">
+                    <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-plus"></i> Thêm phụ kiện
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#productModal" data-action="add" data-preselect-category-id="5">Tai nghe</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#productModal" data-action="add" data-preselect-category-id="6">Sạc dự phòng</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#productModal" data-action="add" data-preselect-category-id="7">Ốp lưng</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#productModal" data-action="add" data-preselect-category-id="8">Cáp sạc</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -119,6 +168,8 @@ if ($result_categories->num_rows > 0) {
         }
         ?>
 
+        <!-- Bảng Điện thoại -->
+        <h3 class="mt-5">Điện thoại</h3>
         <div class="table-responsive">
             <table class="table table-striped table-hover">
                 <thead class="table-primary">
@@ -128,18 +179,36 @@ if ($result_categories->num_rows > 0) {
                         <th>Tên sản phẩm</th>
                         <th>Giá</th>
                         <th>Giá gốc</th>
+                        <th>Flash Sale</th> <!-- Cột mới -->
+                        <th style="width: 12%;">Giảm giá (%)</th> <!-- Cột mới -->
                         <th style="width: 15%;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($products)): ?>
-                        <?php foreach ($products as $product): ?>
+                    <?php if (!empty($phone_products)): ?>
+                        <?php foreach ($phone_products as $product): ?>
                             <tr>
                                 <td><?php echo $product['id']; ?></td>
                                 <td><img src="<?php echo htmlspecialchars($product['mainImage']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" width="50" class="img-thumbnail"></td>
                                 <td><?php echo htmlspecialchars($product['name']); ?></td>
                                 <td><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</td>
                                 <td><?php echo number_format($product['originalPrice'], 0, ',', '.'); ?>₫</td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input flash-sale-toggle" type="checkbox" role="switch" 
+                                               id="flashSaleToggle_<?php echo $product['id']; ?>" 
+                                               data-product-id="<?php echo $product['id']; ?>" 
+                                               <?php echo $product['is_flash_sale'] ? 'checked' : ''; ?>>
+                                    </div>
+                                </td>
+                                <td>
+                                    <!-- Ô nhập phần trăm giảm giá -->
+                                    <input type="number" class="form-control form-control-sm flash-sale-discount-input" 
+                                           data-product-id="<?php echo $product['id']; ?>" 
+                                           value="<?php echo htmlspecialchars($product['flash_sale_discount'] ?? '0'); ?>" 
+                                           min="0" max="100" 
+                                           <?php echo !$product['is_flash_sale'] ? 'disabled' : ''; ?>>
+                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-warning edit-btn" 
                                             data-bs-toggle="modal" 
@@ -150,7 +219,9 @@ if ($result_categories->num_rows > 0) {
                                             data-price="<?php echo $product['price']; ?>"
                                             data-originalprice="<?php echo $product['originalPrice']; ?>"
                                             data-mainimage="<?php echo htmlspecialchars($product['mainImage']); ?>"
-                                            data-details="<?php echo htmlspecialchars($product['details']); ?>"
+                                            data-details="<?php echo htmlspecialchars($product['details'] ?? '[]'); ?>"
+                                            data-is_flash_sale="<?php echo $product['is_flash_sale']; ?>"
+                                            data-flash_sale_discount="<?php echo htmlspecialchars($product['flash_sale_discount'] ?? ''); ?>"
                                             data-category_id="<?php echo $product['category_id']; ?>"
                                             data-images="<?php echo htmlspecialchars($product['images'] ?? '[]'); ?>"
                                             data-variants="<?php echo htmlspecialchars($product['variants'] ?? '[]'); ?>"
@@ -168,7 +239,85 @@ if ($result_categories->num_rows > 0) {
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center">Chưa có sản phẩm nào.</td>
+                            <td colspan="8" class="text-center">Chưa có sản phẩm điện thoại nào.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bảng Phụ kiện -->
+        <h3 class="mt-5">Phụ kiện</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-info">
+                    <tr>
+                        <th>ID</th>
+                        <th>Hình ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th>Giá gốc</th>
+                        <th>Flash Sale</th>
+                        <th style="width: 12%;">Giảm giá (%)</th> <!-- Cột mới -->
+                        <th style="width: 15%;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($accessory_products)): ?>
+                        <?php foreach ($accessory_products as $product): ?>
+                            <tr>
+                                <td><?php echo $product['id']; ?></td>
+                                <td><img src="<?php echo htmlspecialchars($product['mainImage']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" width="50" class="img-thumbnail"></td>
+                                <td><?php echo htmlspecialchars($product['name']); ?></td>
+                                <td><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</td>
+                                <td><?php echo number_format($product['originalPrice'], 0, ',', '.'); ?>₫</td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input flash-sale-toggle" type="checkbox" role="switch" 
+                                               id="flashSaleToggle_<?php echo $product['id']; ?>" 
+                                               data-product-id="<?php echo $product['id']; ?>" 
+                                               <?php echo $product['is_flash_sale'] ? 'checked' : ''; ?>>
+                                    </div>
+                                </td>
+                                <td>
+                                    <!-- Ô nhập phần trăm giảm giá -->
+                                    <input type="number" class="form-control form-control-sm flash-sale-discount-input" 
+                                           data-product-id="<?php echo $product['id']; ?>" 
+                                           value="<?php echo htmlspecialchars($product['flash_sale_discount'] ?? '0'); ?>" 
+                                           min="0" max="100" 
+                                           <?php echo !$product['is_flash_sale'] ? 'disabled' : ''; ?>>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning edit-btn" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#productModal"
+                                            data-id="<?php echo $product['id']; ?>"
+                                            data-name="<?php echo htmlspecialchars($product['name']); ?>"
+                                            data-description="<?php echo htmlspecialchars($product['description']); ?>"
+                                            data-price="<?php echo $product['price']; ?>"
+                                            data-originalprice="<?php echo $product['originalPrice']; ?>"
+                                            data-mainimage="<?php echo htmlspecialchars($product['mainImage']); ?>"
+                                            data-details="<?php echo htmlspecialchars($product['details'] ?? '[]'); ?>"
+                                            data-is_flash_sale="<?php echo $product['is_flash_sale']; ?>"
+                                            data-flash_sale_discount="<?php echo htmlspecialchars($product['flash_sale_discount'] ?? ''); ?>"
+                                            data-category_id="<?php echo $product['category_id']; ?>"
+                                            data-images="<?php echo htmlspecialchars($product['images'] ?? '[]'); ?>"
+                                            data-variants="<?php echo htmlspecialchars($product['variants'] ?? '[]'); ?>"
+                                            data-article_content="<?php echo htmlspecialchars($product['article_content'] ?? ''); ?>"
+                                            data-action="edit">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <a href="product_actions.php?action=delete&id=<?php echo $product['id']; ?>" 
+                                       class="btn btn-sm btn-danger" 
+                                       onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?');">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="8" class="text-center">Chưa có sản phẩm nào.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -180,7 +329,7 @@ if ($result_categories->num_rows > 0) {
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form action="product_actions.php" method="POST">
+                <form action="product_actions.php" method="POST" enctype="multipart/form-data">
                     <div class="modal-header">
                         <h5 class="modal-title" id="productModalLabel">Thêm sản phẩm mới</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -188,6 +337,7 @@ if ($result_categories->num_rows > 0) {
                     <div class="modal-body">
                         <input type="hidden" name="action" id="modalAction" value="add">
                         <input type="hidden" name="id" id="modalProductId">
+                        <input type="hidden" name="old_mainImage" id="modalOldMainImage">
 
                         <div class="mb-3">
                             <label for="modalName" class="form-label">Tên sản phẩm</label>
@@ -217,20 +367,28 @@ if ($result_categories->num_rows > 0) {
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="modalMainImage" class="form-label">Đường dẫn hình ảnh chính</label>
-                            <input type="text" class="form-control" id="modalMainImage" name="mainImage" placeholder="Ví dụ: ./images/sp/ten-sp.jpg" required>
+                            <label for="modalMainImage" class="form-label">Hình ảnh chính</label>
+                            <div id="currentMainImageContainer" class="mb-2" style="display: none;">
+                                <img id="currentMainImage" src="" alt="Ảnh chính hiện tại" style="max-height: 80px; border-radius: 5px;">
+                                <small class="d-block text-muted">Ảnh hiện tại. Tải lên file mới để thay thế.</small>
+                            </div>
+                            <input type="file" class="form-control" id="modalMainImage" name="mainImage" accept="image/*">
+                            <div class="form-text" id="mainImageHelp">Bắt buộc khi thêm mới. Để trống nếu không muốn thay đổi ảnh khi sửa.</div>
                         </div>
                         <div class="mb-3">
                             <label for="modalDescription" class="form-label">Mô tả ngắn</label>
                             <textarea class="form-control" id="modalDescription" name="description" rows="3" required></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Các hình ảnh khác</label>
+                            <label class="form-label">Các hình ảnh khác (Tùy chọn)</label>
                             <div id="imagesContainer" class="p-3 border rounded">
-                                <!-- Các ô nhập hình ảnh sẽ được thêm vào đây -->
+                                <!-- Các ô nhập hình ảnh sẽ được thêm vào đây. Giờ đây sẽ là các input file. -->
+                                <div id="currentOtherImagesContainer" class="d-flex flex-wrap gap-2 mb-2"></div>
                             </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addImageBtn"><i class="fas fa-plus"></i> Thêm ảnh</button>
-                            <input type="hidden" name="images" id="modalImages">
+                            <!-- Thay đổi: Sử dụng input multiple để tải nhiều ảnh cùng lúc -->
+                            <input type="file" class="form-control mt-2" name="other_images[]" id="modalOtherImages" multiple accept="image/*">
+                            <div class="form-text">Bạn có thể chọn nhiều ảnh. Các ảnh mới sẽ được thêm vào, không thay thế ảnh cũ.</div>
+                            <input type="hidden" name="old_images" id="modalOldImages">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Các phiên bản sản phẩm (Màu sắc, Dung lượng, Giá)</label>
@@ -255,6 +413,16 @@ if ($result_categories->num_rows > 0) {
                             <label for="modalArticleContent" class="form-label">Thông tin sản phẩm (Bài viết giới thiệu)</label>
                             <p class="small text-muted">Soạn thảo bài viết giới thiệu chi tiết về sản phẩm. Bạn có thể sử dụng các thẻ HTML cơ bản như &lt;h4&gt;, &lt;p&gt;, &lt;b&gt; để định dạng.</p>
                             <textarea class="form-control" id="modalArticleContent" name="article_content" rows="10"></textarea>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="modalIsFlashSale" name="is_flash_sale" value="1">
+                            <label class="form-check-label" for="modalIsFlashSale">Đặt làm sản phẩm Flash Sale</label>
+                        </div>
+                        <!-- THÊM MỚI: Ô nhập phần trăm giảm giá, chỉ hiện khi Flash Sale được bật -->
+                        <div class="mb-3" id="flashSaleDiscountContainer" style="display: none;">
+                            <label for="modalFlashSaleDiscount" class="form-label">Giảm giá Flash Sale (%)</label>
+                            <input type="number" class="form-control" id="modalFlashSaleDiscount" name="flash_sale_discount" min="0" max="100" step="1">
+                            <div class="form-text">Nhập phần trăm giảm giá. Giá bán sẽ được tự động tính toán từ Giá gốc.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -317,6 +485,84 @@ if ($result_categories->num_rows > 0) {
             }
         };
 
+        // --- TEMPLATE THÔNG SỐ KỸ THUẬT CHO PHỤ KIỆN ---
+        const defaultAccessorySpecsTemplate = {
+            "Pin & Sạc": {
+                "Thời lượng pin tai nghe": "",
+                "Thời lượng pin hộp sạc": "",
+                "Cổng sạc": "",
+                "Công nghệ sạc": ""
+            },
+            "Kết nối & Tương thích": {
+                "Công nghệ kết nối": "",
+                "Kết nối cùng lúc": "",
+                "Tương thích": "",
+                "Ứng dụng kết nối": ""
+            },
+            "Tiện ích & Tính năng": {
+                "Công nghệ âm thanh": "",
+                "Tiện ích": "",
+                "Điều khiển": "",
+                "Phím điều khiển": ""
+            },
+            "Thiết kế & Trọng lượng": {
+                "Kích thước": "",
+                "Khối lượng": ""
+            },
+            "Thông tin chung": {
+                "Thương hiệu của": "",
+                "Sản xuất tại": ""
+            }
+        };
+
+        // --- TEMPLATE CHO SẠC DỰ PHÒNG ---
+        const powerBankSpecsTemplate = {
+            "Dung lượng & Công suất": {
+                "Dung lượng pin": "",
+                "Hiệu suất sạc": "",
+                "Công suất đầu vào": "",
+                "Công suất đầu ra": ""
+            },
+            "Cổng kết nối": {
+                "Đầu vào (Input)": "",
+                "Đầu ra (Output)": ""
+            },
+            "Thông tin chung": {
+                "Lõi pin": "",
+                "Công nghệ/Tiện ích": "",
+                "Kích thước": "",
+                "Trọng lượng": ""
+            }
+        };
+
+        // --- TEMPLATE CHO ỐP LƯNG ---
+        const caseSpecsTemplate = {
+            "Thiết kế & Chất liệu": {
+                "Chất liệu": "",
+                "Thiết kế": "",
+                "Tương thích": ""
+            },
+            "Thông tin chung": {
+                "Tiện ích": "",
+                "Thương hiệu": ""
+            }
+        };
+
+        // --- TEMPLATE CHO CÁP SẠC ---
+        const cableSpecsTemplate = {
+            "Thông số": {
+                "Chức năng": "Sạc & Truyền dữ liệu",
+                "Đầu vào": "",
+                "Đầu ra": "",
+                "Dòng sạc tối đa": "",
+                "Chiều dài dây": ""
+            },
+            "Thông tin chung": {
+                "Chất liệu dây": "",
+                "Thương hiệu": ""
+            }
+        };
+
         const productModal = document.getElementById('productModal');
         productModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
@@ -332,11 +578,22 @@ if ($result_categories->num_rows > 0) {
             const priceInput = productModal.querySelector('#modalPrice');
             const originalPriceInput = productModal.querySelector('#modalOriginalPrice');
             const mainImageInput = productModal.querySelector('#modalMainImage');
+            const oldMainImageInput = productModal.querySelector('#modalOldMainImage');
+            const currentMainImageContainer = productModal.querySelector('#currentMainImageContainer');
+            const currentMainImage = productModal.querySelector('#currentMainImage');
+            const mainImageHelp = productModal.querySelector('#mainImageHelp');
             const categoryInput = productModal.querySelector('#modalCategory');
+        const isFlashSaleCheckbox = productModal.querySelector('#modalIsFlashSale'); // Thêm checkbox
             const detailsInput = productModal.querySelector('#modalDetails'); // Input ẩn
-            const imagesInput = productModal.querySelector('#modalImages'); // Input ẩn cho các ảnh khác
+            const oldImagesInput = productModal.querySelector('#modalOldImages'); // Input ẩn cho các ảnh khác
             const variantsInput = productModal.querySelector('#modalVariants'); // Input ẩn cho các phiên bản
             const articleContentInput = productModal.querySelector('#modalArticleContent');
+
+            // THÊM MỚI: Lấy các element của Flash Sale
+            const flashSaleDiscountContainer = productModal.querySelector('#flashSaleDiscountContainer');
+            // SỬA LỖI: product_modal -> productModal
+            const flashSaleDiscountInput = productModal.querySelector('#modalFlashSaleDiscount');
+
 
             if (action === 'edit') {
                 modalTitle.textContent = 'Sửa thông tin sản phẩm';
@@ -349,23 +606,60 @@ if ($result_categories->num_rows > 0) {
                 descriptionInput.value = button.getAttribute('data-description');
                 priceInput.value = button.getAttribute('data-price');
                 originalPriceInput.value = button.getAttribute('data-originalprice');
-                mainImageInput.value = button.getAttribute('data-mainimage');
                 categoryInput.value = button.getAttribute('data-category_id');
                 articleContentInput.value = button.getAttribute('data-article_content');
+                isFlashSaleCheckbox.checked = (button.getAttribute('data-is_flash_sale') == 1); // Đặt trạng thái checkbox
+                
+                // THÊM MỚI: Lấy và điền giá trị giảm giá
+                const discount = button.getAttribute('data-flash_sale_discount') || '';
+                flashSaleDiscountInput.value = discount;
 
-                renderImages(button.getAttribute('data-images'));
+                // Xử lý hiển thị ảnh chính hiện tại
+                const mainImageUrl = button.getAttribute('data-mainimage');
+                if (mainImageUrl) {
+                    currentMainImage.src = mainImageUrl;
+                    currentMainImageContainer.style.display = 'block';
+                    oldMainImageInput.value = mainImageUrl;
+                } else {
+                    currentMainImageContainer.style.display = 'none';
+                }
+                mainImageInput.required = false; // Không bắt buộc tải ảnh mới khi sửa
+                mainImageHelp.textContent = 'Để trống nếu không muốn thay đổi ảnh chính.';
+
+                // Xử lý hiển thị các ảnh phụ hiện tại
+                renderOtherImages(button.getAttribute('data-images'));
                 renderVariants(button.getAttribute('data-variants'));
                 
-                // Giải mã JSON và render ra form
+                // Giải mã JSON và render ra form, chọn template dựa trên category
+                const categoryId = button.getAttribute('data-category_id');
+                let currentTemplate;
+                // THAY ĐỔI: Chọn template dựa trên ID danh mục
+                switch(categoryId) {
+                    case '5': // ID của Tai nghe
+                        currentTemplate = defaultAccessorySpecsTemplate;
+                        break;
+                    case '6': // ID của Sạc dự phòng
+                        currentTemplate = powerBankSpecsTemplate;
+                        break;
+                    case '7': // ID của Ốp lưng
+                        currentTemplate = caseSpecsTemplate;
+                        break;
+                    case '8': // ID của Cáp sạc
+                        currentTemplate = cableSpecsTemplate;
+                        break;
+                    default: // Mặc định là điện thoại
+                        currentTemplate = defaultSpecsTemplate;
+                }
+
                 try {
                     const savedData = JSON.parse(button.getAttribute('data-details'));
                     // Gộp dữ liệu đã lưu vào template để đảm bảo các trường cũ vẫn hiển thị
-                    const mergedData = { ...defaultSpecsTemplate, ...savedData };
+                    // và các trường mới trong template cũng xuất hiện
+                    const mergedData = { ...currentTemplate, ...savedData };
                     renderSpecs(mergedData, savedData);
-                } catch (e) {
-                    // Nếu dữ liệu cũ không phải JSON, render template mặc định
-                    renderSpecs(defaultSpecsTemplate);
-                    console.error("Dữ liệu cũ không phải JSON, hiển thị template mặc định.");
+                } catch (e) { // Lỗi parse JSON
+                    // Nếu dữ liệu cũ không phải JSON, render template hiện tại (dựa trên category đã chọn)
+                    renderSpecs(currentTemplate);
                 }
             } else {
                 modalTitle.textContent = 'Thêm sản phẩm mới';
@@ -378,45 +672,99 @@ if ($result_categories->num_rows > 0) {
                 descriptionInput.value = '';
                 priceInput.value = '';
                 originalPriceInput.value = '';
-                mainImageInput.value = '';
                 categoryInput.value = '';
                 articleContentInput.value = '';
+                isFlashSaleCheckbox.checked = false; // Bỏ chọn khi thêm mới
+                mainImageInput.value = null; // Xóa file đã chọn
+                mainImageInput.required = true; // Bắt buộc tải ảnh khi thêm mới
+                mainImageHelp.textContent = 'Bắt buộc khi thêm mới.';
+                currentMainImageContainer.style.display = 'none';
+
+                // Kiểm tra nếu có category ID được truyền từ nút "Thêm phụ kiện"
+                const preselectCategoryId = button.getAttribute('data-preselect-category-id');
+                if (preselectCategoryId) {
+                    categoryInput.value = preselectCategoryId;
+                } else {
+                    categoryInput.value = ''; // Đảm bảo không có danh mục nào được chọn mặc định
+                }
+                // THÊM MỚI: Reset trường giảm giá
+                flashSaleDiscountInput.value = '';
+
+                oldMainImageInput.value = '';
 
                 // Xóa các trường động
-                $('#imagesContainer').empty();
+                $('#currentOtherImagesContainer').empty();
                 $('#variantsContainer').empty();
-                
-                // Render template mặc định cho sản phẩm mới
-                renderSpecs(defaultSpecsTemplate);
+
+                // Render template mặc định cho sản phẩm mới, dựa trên category được chọn sẵn
+                switch(preselectCategoryId) {
+                    case '5': // ID của Tai nghe
+                        renderSpecs(defaultAccessorySpecsTemplate);
+                        break;
+                    case '6': // ID của Sạc dự phòng
+                        renderSpecs(powerBankSpecsTemplate);
+                        break;
+                    case '7': // ID của Ốp lưng
+                        renderSpecs(caseSpecsTemplate);
+                        break;
+                    case '8': // ID của Cáp sạc
+                        renderSpecs(cableSpecsTemplate);
+                        break;
+                    default: // Mặc định là điện thoại
+                        renderSpecs(defaultSpecsTemplate);
+                        break;
+                }
             }
+
+            // --- LOGIC MỚI: Xử lý hiển thị và tính toán cho Flash Sale ---
+            function toggleFlashSaleFields() {
+                if (isFlashSaleCheckbox.checked) {
+                    flashSaleDiscountContainer.style.display = 'block';
+                    priceInput.readOnly = true; // Khóa ô giá bán
+                    calculateDiscountedPrice();
+                } else {
+                    flashSaleDiscountContainer.style.display = 'none';
+                    priceInput.readOnly = false; // Mở khóa ô giá bán
+                }
+            }
+
+            function calculateDiscountedPrice() {
+                if (!isFlashSaleCheckbox.checked) return;
+
+                const originalPrice = parseFloat(originalPriceInput.value);
+                const discount = parseFloat(flashSaleDiscountInput.value);
+
+                if (!isNaN(originalPrice) && !isNaN(discount) && discount >= 0 && discount <= 100) {
+                    const discountedPrice = originalPrice * (1 - discount / 100);
+                    priceInput.value = Math.round(discountedPrice); // Làm tròn đến số nguyên gần nhất
+                } else if (!isNaN(originalPrice)) {
+                    // Nếu không có giảm giá, giá bán bằng giá gốc
+                    priceInput.value = originalPrice;
+                }
+            }
+
+            // Gắn sự kiện
+            isFlashSaleCheckbox.addEventListener('change', toggleFlashSaleFields);
+            originalPriceInput.addEventListener('input', calculateDiscountedPrice);
+            flashSaleDiscountInput.addEventListener('input', calculateDiscountedPrice);
+
+            // Gọi lần đầu để kiểm tra trạng thái khi mở modal
+            toggleFlashSaleFields();
         });
 
-        // --- LOGIC CHO THÔNG SỐ KỸ THUẬT ĐỘNG ---
-        // --- LOGIC CHO HÌNH ẢNH PHỤ ---
-        const imagesContainer = $('#imagesContainer');
-        $('#addImageBtn').on('click', function() {
-            addImageItem();
-        });
-        imagesContainer.on('click', '.delete-image-btn', function() {
-            $(this).closest('.image-item').remove();
-        });
+        // --- LOGIC MỚI CHO HIỂN THỊ HÌNH ẢNH PHỤ ---
+        function renderOtherImages(jsonString) {
+            const container = $('#currentOtherImagesContainer');
+            container.empty();
+            $('#modalOldImages').val(jsonString); // Lưu lại chuỗi JSON ảnh cũ
 
-        function addImageItem(path = '') {
-            const itemHtml = `
-                <div class="image-item input-group input-group-sm mb-2">
-                    <input type="text" class="form-control image-path" placeholder="Đường dẫn ảnh (ví dụ: ./images/sp/anh-phu.jpg)" value="${path}">
-                    <button class="btn btn-outline-danger delete-image-btn" type="button"><i class="fas fa-times"></i></button>
-                </div>
-            `;
-            imagesContainer.append(itemHtml);
-        }
-
-        function renderImages(jsonString) {
-            imagesContainer.empty();
             try {
                 const paths = JSON.parse(jsonString);
                 if (Array.isArray(paths)) {
-                    paths.forEach(path => addImageItem(path));
+                    paths.forEach(path => {
+                        const imgHtml = `<img src="${path}" class="img-thumbnail" style="height: 60px; width: auto;" alt="Ảnh phụ">`;
+                        container.append(imgHtml);
+                    });
                 }
             } catch (e) { console.error("Lỗi parse JSON ảnh:", e); }
         }
@@ -455,6 +803,28 @@ if ($result_categories->num_rows > 0) {
             } catch (e) { console.error("Lỗi parse JSON phiên bản:", e); }
         }
 
+        // --- LOGIC CHUYỂN ĐỔI TEMPLATE THÔNG SỐ ---
+        $('#modalCategory').on('change', function() {
+            const categoryId = $(this).val();
+            // THAY ĐỔI: Chọn template dựa trên ID danh mục
+            switch(categoryId) {
+                case '5': // ID của Tai nghe
+                    renderSpecs(defaultAccessorySpecsTemplate);
+                    break;
+                case '6': // ID của Sạc dự phòng
+                    renderSpecs(powerBankSpecsTemplate);
+                    break;
+                case '7': // ID của Ốp lưng
+                    renderSpecs(caseSpecsTemplate);
+                    break;
+                case '8': // ID của Cáp sạc
+                    renderSpecs(cableSpecsTemplate);
+                    break;
+                default: // Mặc định là điện thoại
+                    renderSpecs(defaultSpecsTemplate);
+                    break;
+            }
+        });
 
         const specsContainer = $('#specsContainer');
 
@@ -526,16 +896,6 @@ if ($result_categories->num_rows > 0) {
 
         // Thu thập dữ liệu từ form và chuyển thành JSON trước khi submit
         $('#productModal form').on('submit', function() {
-            // Thu thập hình ảnh
-            const imagesData = [];
-            $('.image-path').each(function() {
-                const path = $(this).val().trim();
-                if (path) {
-                    imagesData.push(path);
-                }
-            });
-            $('#modalImages').val(JSON.stringify(imagesData));
-
             // Thu thập phiên bản
             const variantsData = [];
             $('.variant-item').each(function() {
@@ -577,6 +937,54 @@ if ($result_categories->num_rows > 0) {
             animation: 150,
             handle: '.card-header', // Chỉ kéo thả được khi nhấn vào header của group
             ghostClass: 'bg-info'
+        });
+
+        // --- LOGIC MỚI CHO FLASH SALE (TOGGLE VÀ INPUT) ---
+        function updateFlashSale(productId, isFlashSale, discount) {
+             $.ajax({
+                url: 'product_actions.php',
+                type: 'POST',
+                data: {
+                    action: 'update_flash_sale_details', // Action mới
+                    product_id: productId,
+                    is_flash_sale: isFlashSale,
+                    discount: discount
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status !== 'success') {
+                        alert('Lỗi: ' + response.message);
+                    }
+                },
+                error: function() { alert('Đã xảy ra lỗi không xác định khi cập nhật Flash Sale.'); }
+            });
+        }
+
+        $('.flash-sale-toggle').on('change', function() {
+            const checkbox = $(this);
+            const productId = checkbox.data('product-id');
+            const isFlashSale = checkbox.is(':checked') ? 1 : 0;
+            const discountInput = $(`.flash-sale-discount-input[data-product-id="${productId}"]`);
+            
+            // Kích hoạt/Vô hiệu hóa ô input
+            discountInput.prop('disabled', !isFlashSale);
+
+            // Gửi yêu cầu cập nhật
+            const discountValue = discountInput.val();
+            updateFlashSale(productId, isFlashSale, discountValue);
+        });
+
+        // Sự kiện khi thay đổi giá trị trong ô giảm giá
+        $('.flash-sale-discount-input').on('change', function() {
+            const input = $(this);
+            const productId = input.data('product-id');
+            const discountValue = input.val();
+            const isFlashSale = $(`.flash-sale-toggle[data-product-id="${productId}"]`).is(':checked') ? 1 : 0;
+
+            // Chỉ gửi yêu cầu nếu Flash Sale đang bật
+            if (isFlashSale) {
+                updateFlashSale(productId, isFlashSale, discountValue);
+            }
         });
     });
     </script>

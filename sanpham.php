@@ -285,9 +285,6 @@ switch ($sort_order) {
                                     ?>
                                     <span class="ms-1 text-muted small">(<?php echo htmlspecialchars($row["reviews"]); ?>)</span>
                                 </div>
-                                <p class="card-text">
-                                    <?php echo htmlspecialchars($row["description"]); ?>
-                                </p>
                             </div>
                             <div class="card-footer bg-transparent">
                                 <form action="cart_actions.php" method="POST" class="d-grid">

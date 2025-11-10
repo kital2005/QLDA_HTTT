@@ -91,12 +91,10 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link rel="stylesheet" href="css/style.css" />
-  </head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <script src="https://unpkg.com/scrollreveal"></script>
+        <link rel="stylesheet" href="css/style.css" />
+      </head>
   <body>
     <header class="sticky-top">
       <nav class="navbar navbar-expand-lg">
@@ -409,23 +407,25 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                 <div class="card bg-light mb-4">
                     <div class="card-body">
                         <h5>Để lại đánh giá của bạn</h5>
-                        <form action="submit_review.php" method="POST">
+                        <!-- Thêm div để hiển thị thông báo -->
+                        <div id="review-message" class="mt-3"></div>
+                        <form id="reviewForm" action="submit_review.php" method="POST">
                             <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
                             <div class="mb-3">
                                 <label class="form-label">Xếp hạng của bạn:</label>
                                 <div class="star-rating">
-                                    <input type="radio" id="star5" name="rating" value="5" required/><label for="star5" title="5 sao"></label>
-                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 sao"></label>
-                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 sao"></label>
-                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 sao"></label>
-                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 sao"></label>
+                                    <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 sao"><i class="fas fa-star"></i></label>
+                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 sao"><i class="fas fa-star"></i></label>
+                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 sao"><i class="fas fa-star"></i></label>
+                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 sao"><i class="fas fa-star"></i></label>
+                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 sao"><i class="fas fa-star"></i></label>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label for="comment" class="form-label">Bình luận của bạn:</label>
-                                <textarea class="form-control" id="comment" name="comment" rows="3" placeholder="Sản phẩm rất tốt, đáng tiền..."></textarea>
+                                <textarea class="form-control" id="comment" name="comment" rows="3" placeholder="Sản phẩm rất tốt, đáng tiền..." required></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+                            <button type="submit" class="btn btn-primary" id="submitReviewBtn">Gửi đánh giá</button>
                         </form>
                     </div>
                 </div>
@@ -434,22 +434,24 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
               <?php endif; ?>
 
               <!-- Danh sách các đánh giá đã có -->
-              <?php if (!empty($reviews)): ?>
-                <?php foreach ($reviews as $review): ?>
-                <div class="review-item border-bottom pb-3 mb-3">
-                    <p class="fw-bold mb-1"><?php echo htmlspecialchars($review['user_name']); ?></p>
-                    <div class="d-flex align-items-center mb-1">
-                        <div class="rating text-warning me-2">
-                            <?php for ($i = 0; $i < 5; $i++) { echo $i < $review['rating'] ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; } ?>
-                        </div>
-                        <small class="text-muted"><?php echo date('d/m/Y', strtotime($review['created_at'])); ?></small>
-                    </div>
-                    <p class="mb-0"><?php echo nl2br(htmlspecialchars($review['comment'])); ?></p>
-                </div>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <p>Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên đánh giá!</p>
-              <?php endif; ?>
+              <div id="reviews-list">
+                <?php if (!empty($reviews)): ?>
+                  <?php foreach ($reviews as $review): ?>
+                  <div class="review-item border-bottom pb-3 mb-3">
+                      <p class="fw-bold mb-1"><?php echo htmlspecialchars($review['user_name']); ?></p>
+                      <div class="d-flex align-items-center mb-1">
+                          <div class="rating text-warning me-2">
+                              <?php for ($i = 0; $i < 5; $i++) { echo $i < $review['rating'] ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; } ?>
+                          </div>
+                          <small class="text-muted"><?php echo date('d/m/Y', strtotime($review['created_at'])); ?></small>
+                      </div>
+                      <p class="mb-0"><?php echo nl2br(htmlspecialchars($review['comment'])); ?></p>
+                  </div>
+                  <?php endforeach; ?>
+                <?php else: ?>
+                  <p id="no-reviews-message">Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên đánh giá!</p>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
         </div>
@@ -575,6 +577,111 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
         // Cập nhật số lượng ẩn trong form khi người dùng thay đổi
         document.getElementById('quantity').addEventListener('change', function() {
             document.getElementById('form_quantity').value = this.value;
+        });
+    </script>
+    <script>
+        // AJAX xử lý gửi đánh giá
+        document.addEventListener('DOMContentLoaded', function() {
+            const reviewForm = document.getElementById('reviewForm');
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Ngăn submit form mặc định
+                    console.log('Submit event triggered for review form.');
+
+                    const submitBtn = document.getElementById('submitReviewBtn');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Đang gửi...';
+                    $('#review-message').html(''); // Xóa thông báo cũ
+
+                    // THÊM MỚI: Kiểm tra xem người dùng đã chọn sao chưa
+                    const ratingValue = reviewForm.querySelector('input[name="rating"]:checked');
+                    if (!ratingValue) {
+                        $('#review-message').html('<div class="alert alert-danger">Vui lòng chọn số sao đánh giá.</div>');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        return; // Dừng việc gửi form
+                    }
+
+                    // Thu thập dữ liệu form
+                    const formData = new FormData(this);
+                    // console.log('FormData prepared. Sending fetch request...');
+
+                    // Gửi AJAX request
+                    fetch('submit_review.php', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        // console.log('Received response from server:', response);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // console.log('Response data parsed as JSON:', data);
+                        const messageDiv = $('#review-message');
+
+                        if (data.success) {
+                            // Hiển thị thông báo thành công trực tiếp trên trang
+                            messageDiv.html(`<div class="alert alert-success">${data.message}</div>`);
+
+                            // Reset form
+                            reviewForm.reset();
+
+                            // Tạo HTML cho đánh giá mới
+                            const newReviewHTML = `
+                                <div class="review-item border-bottom pb-3 mb-3">
+                                    <p class="fw-bold mb-1">${data.review.user_name}</p>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <div class="rating text-warning me-2">
+                                            ${Array.from({length: 5}, (_, i) => i < data.review.rating ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>').join('')}
+                                        </div>
+                                        <small class="text-muted">${new Date().toLocaleDateString('vi-VN')}</small>
+                                    </div>
+                                    <p class="mb-0">${data.review.comment.replace(/\n/g, '<br>')}</p>
+                                </div>
+                            `;
+
+                            // Thêm đánh giá mới vào đầu danh sách
+                            const reviewsList = document.getElementById('reviews-list');
+                            const noReviewsMsg = document.getElementById('no-reviews-message');
+
+                            if (noReviewsMsg) {
+                                noReviewsMsg.remove();
+                            }
+                            
+                            // Thêm đánh giá mới vào đầu danh sách
+                            reviewsList.insertAdjacentHTML('afterbegin', newReviewHTML);
+
+                            // Cập nhật số lượng đánh giá trong tab
+                            const reviewsTabElement = document.getElementById('reviews-tab');
+                            const match = reviewsTabElement.textContent.match(/\d+/);
+                            const currentCount = match ? parseInt(match[0]) : 0;
+                            reviewsTabElement.textContent = `Đánh giá (${currentCount + 1})`;
+
+                        } else {
+                            // Hiển thị thông báo lỗi trực tiếp trên trang
+                            messageDiv.html(`<div class="alert alert-danger">${data.message}</div>`);
+                        }
+                    })
+                    .catch(error => {
+                        // console.error('Fetch Error:', error);
+                        const messageDiv = $('#review-message');
+                        messageDiv.html(`<div class="alert alert-danger">Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.</div>`);
+                    })
+                    .finally(() => {
+                        console.log('Fetch finished. Re-enabling submit button.');
+                        // Khôi phục nút submit
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    });
+                });
+            }
         });
     </script>
   </body>

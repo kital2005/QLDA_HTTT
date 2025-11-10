@@ -7,6 +7,9 @@ $search_term = trim($_GET['search'] ?? '');
 $category_id = isset($_GET['category']) ? (int)$_GET['category'] : 0;
 $sort_order = $_GET['sort'] ?? 'newest';
 $condition = $_GET['condition'] ?? 'all'; // Thêm bộ lọc tình trạng (mới/cũ)
+$price_min = isset($_GET['price_min']) && is_numeric($_GET['price_min']) ? (int)$_GET['price_min'] : null;
+$price_max = isset($_GET['price_max']) && is_numeric($_GET['price_max']) ? (int)$_GET['price_max'] : null;
+$rating_filter = isset($_GET['rating']) && is_numeric($_GET['rating']) ? (int)$_GET['rating'] : 0;
 
 // Định nghĩa các ID danh mục phụ kiện (cần khớp với CSDL của bạn)
 $accessory_category_ids = [5, 6, 7, 8]; // Ví dụ: 5=Tai nghe, 6=Sạc dự phòng, 7=Ốp lưng, 8=Cáp sạc
@@ -88,6 +91,25 @@ if (in_array($category_id, $accessory_category_ids)) {
     }
 }
 
+// Lọc theo khoảng giá
+if ($price_min !== null) {
+    $sql .= " AND price >= ?";
+    $params[] = $price_min;
+    $types .= 'i';
+}
+if ($price_max !== null) {
+    $sql .= " AND price <= ?";
+    $params[] = $price_max;
+    $types .= 'i';
+}
+
+// Lọc theo đánh giá
+if ($rating_filter > 0) {
+    $sql .= " AND rating >= ?";
+    $params[] = $rating_filter;
+    $types .= 'i';
+}
+
 // Xử lý sắp xếp
 switch ($sort_order) {
     case 'price_asc': $sql .= " ORDER BY price ASC"; break;
@@ -118,6 +140,25 @@ switch ($sort_order) {
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* Di chuyển CSS cho khung viền vào đây */
+      .filter-sidebar {
+        border: 1px solid var(--bs-border-color-translucent);
+        padding: 1.25rem;
+        border-radius: 0.5rem;
+        background-color: var(--bs-tertiary-bg);
+      }
+      /* Áp dụng position: sticky cho cột chứa bộ lọc */
+      .sticky-filter-column {
+        position: -webkit-sticky; /* Tương thích Safari */
+        position: sticky;
+        top: 110px; /* Khoảng cách từ đỉnh, sau khi trừ đi chiều cao header */
+        align-self: flex-start; /* Quan trọng: để sticky hoạt động đúng trong flexbox */
+        /* Thêm thanh cuộn nếu bộ lọc quá dài */
+        max-height: calc(100vh - 130px);
+        overflow-y: auto;
+      }
+    </style>
   </head>
   <body>
     <header class="sticky-top">
@@ -193,43 +234,84 @@ switch ($sort_order) {
 
     <main class="py-5">
       <div class="container">
-        <h2 class="text-center mb-5 fw-bold">Tất Cả Sản Phẩm</h2>
-        
-        <!-- Ghi chú: Form tìm kiếm và bộ lọc -->
-        <form action="sanpham.php" method="GET" class="mb-5">
-            <div class="row g-3 justify-content-end">
-                <div class="col-lg-3 col-md-4" id="categoryFilterContainer">
-                    <select name="category" class="form-select">
-                        <option value="0">Tất cả hãng</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['id']; ?>" <?php if ($category_id == $category['id']) echo 'selected'; ?>>
-                                <?php echo htmlspecialchars($category['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-lg-3 col-md-4" id="conditionFilterContainer">
-                    <select name="condition" class="form-select">
-                        <option value="all" <?php if ($condition == 'all') echo 'selected'; ?>>Tất cả tình trạng</option>
-                        <option value="new" <?php if ($condition == 'new') echo 'selected'; ?>>Sản phẩm mới</option>
-                        <option value="old" <?php if ($condition == 'old') echo 'selected'; ?>>Sản phẩm cũ</option>
-                    </select>
-                </div>
-                <div class="col-lg-3 col-md-4">
-                    <select name="sort" class="form-select">
-                        <option value="newest" <?php if ($sort_order == 'newest') echo 'selected'; ?>>Sắp xếp: Mới nhất</option>
-                        <option value="price_asc" <?php if ($sort_order == 'price_asc') echo 'selected'; ?>>Giá: Thấp đến Cao</option>
-                        <option value="price_desc" <?php if ($sort_order == 'price_desc') echo 'selected'; ?>>Giá: Cao đến Thấp</option>
-                        <option value="name_asc" <?php if ($sort_order == 'name_asc') echo 'selected'; ?>>Tên: A-Z</option>
-                    </select>
-                </div>
-                <div class="col-lg-3 col-md-12 text-end">
-                    <button type="submit" class="btn btn-success w-100">Áp dụng</button>
-                </div>
-            </div>
-        </form>
+        <div class="row">
+          <!-- Sidebar Bộ lọc (thêm class mới) -->
+          <div class="col-lg-2 sticky-filter-column">
+            <div class="filter-sidebar">
+              <h4 class="mb-4">Bộ lọc sản phẩm</h4>
+              <form action="sanpham.php" method="GET">
+                <!-- Giữ lại các tham số cũ khi submit -->
+                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
+                <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort_order); ?>">
 
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                <!-- Lọc theo Hãng -->
+                <div class="mb-4">
+                  <h5>Hãng sản xuất</h5>
+                  <ul class="list-unstyled filter-list">
+                    <li><a href="?" class="<?php if ($category_id == 0) echo 'active'; ?>">Tất cả</a></li>
+                    <?php foreach ($categories as $category): ?>
+                      <li><a href="?category=<?php echo $category['id']; ?>" class="<?php if ($category_id == $category['id']) echo 'active'; ?>"><?php echo htmlspecialchars($category['name']); ?></a></li>
+                    <?php endforeach; ?>
+                  </ul>
+                </div>
+
+                <!-- Lọc theo Khoảng giá -->
+                <div class="mb-4">
+                  <h5>Khoảng giá</h5>
+                  <div class="d-flex align-items-center">
+                    <input type="number" name="price_min" class="form-control me-2" placeholder="Từ" value="<?php echo htmlspecialchars($price_min ?? ''); ?>">
+                    <span>-</span>
+                    <input type="number" name="price_max" class="form-control ms-2" placeholder="Đến" value="<?php echo htmlspecialchars($price_max ?? ''); ?>">
+                  </div>
+                </div>
+
+                <!-- Lọc theo Tình trạng -->
+                <div class="mb-4" id="conditionFilterContainer">
+                  <h5>Tình trạng</h5>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="condition" id="cond_all" value="all" <?php if ($condition == 'all') echo 'checked'; ?>>
+                    <label class="form-check-label" for="cond_all">Tất cả</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="condition" id="cond_new" value="new" <?php if ($condition == 'new') echo 'checked'; ?>>
+                    <label class="form-check-label" for="cond_new">Sản phẩm mới</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="condition" id="cond_old" value="old" <?php if ($condition == 'old') echo 'checked'; ?>>
+                    <label class="form-check-label" for="cond_old">Sản phẩm cũ</label>
+                  </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>Áp dụng</button>
+                  <a href="sanpham.php" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Danh sách sản phẩm (rộng hơn) -->
+          <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h3 class="mb-0">Tất Cả Sản Phẩm</h3>
+              <form action="sanpham.php" method="GET" id="sortForm" class="d-flex align-items-center">
+                 <!-- Các input ẩn để giữ lại bộ lọc khi sắp xếp -->
+                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
+                <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_id); ?>">
+                <input type="hidden" name="condition" value="<?php echo htmlspecialchars($condition); ?>">
+                <input type="hidden" name="price_min" value="<?php echo htmlspecialchars($price_min ?? ''); ?>">
+                <input type="hidden" name="price_max" value="<?php echo htmlspecialchars($price_max ?? ''); ?>">
+                <label for="sort" class="form-label me-2 mb-0">Sắp xếp:</label>
+                <select name="sort" id="sort" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit();" style="width: auto;">
+                  <option value="newest" <?php if ($sort_order == 'newest') echo 'selected'; ?>>Mới nhất</option>
+                  <option value="price_asc" <?php if ($sort_order == 'price_asc') echo 'selected'; ?>>Giá: Thấp đến Cao</option>
+                  <option value="price_desc" <?php if ($sort_order == 'price_desc') echo 'selected'; ?>>Giá: Cao đến Thấp</option>
+                  <option value="name_asc" <?php if ($sort_order == 'name_asc') echo 'selected'; ?>>Tên: A-Z</option>
+                </select>
+              </form>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
           
           <?php
             // Ghi chú: Thực thi câu truy vấn đã được xây dựng động ở trên
@@ -246,7 +328,7 @@ switch ($sort_order) {
                     $original_price_formatted = number_format($row["originalPrice"], 0, ',', '.') . '₫';
                     
                     // Tính toán số sao (làm tròn)
-                    $stars = round($row["rating"]);
+                    $stars = round($row["rating"] ?? 0);
           ?>
 
                     <div class="col">
@@ -266,16 +348,8 @@ switch ($sort_order) {
                                     <a href="chitietsanpham.php?id=<?php echo $row["id"]; ?>" class="btn btn-light">Xem chi tiết</a>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0"><?php echo htmlspecialchars($row["name"]); ?></h5>
-                                    <div class="price">
-                                        <span class="current-price"><?php echo $price_formatted; ?></span>
-                                        <?php if ($row["originalPrice"] > $row["price"]): ?>
-                                            <span class="original-price"><?php echo $original_price_formatted; ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title flex-grow-1"><a href="chitietsanpham.php?id=<?php echo $row["id"]; ?>" class="text-decoration-none text-dark stretched-link"><?php echo htmlspecialchars($row["name"]); ?></a></h5>
                                 <div class="ratings mb-2" title="Điểm trung bình: <?php echo number_format($row["rating"], 1); ?>">
                                     <?php 
                                     for ($i = 1; $i <= 5; $i++) {
@@ -283,7 +357,13 @@ switch ($sort_order) {
                                         echo '<i class="fas fa-star ' . $star_class . '"></i>';
                                     }
                                     ?>
-                                    <span class="ms-1 text-muted small">(<?php echo htmlspecialchars($row["reviews"]); ?>)</span>
+                                    <span class="ms-1 text-muted small">(<?php echo htmlspecialchars($row["reviews"] ?? 0); ?>)</span>
+                                </div>
+                                <div class="price mt-auto">
+                                    <span class="current-price fw-bold text-danger fs-5"><?php echo $price_formatted; ?></span>
+                                    <?php if ($row["originalPrice"] > $row["price"]): ?>
+                                        <span class="original-price text-muted text-decoration-line-through ms-2"><?php echo $original_price_formatted; ?></span>
+                                    <?php endif; ?>
                                 </div>
                                 <p class="card-text">
                                     <?php echo htmlspecialchars($row["description"]); ?>
@@ -316,25 +396,26 @@ switch ($sort_order) {
             $conn->close(); // Đóng kết nối CSDL
             // KẾT THÚC KHỐI CODE PHP TRUY VẤN CSDL
           ?>
-        </div>
+            </div>
 
-        <nav aria-label="Product Page Navigation" class="mt-5">
-          <ul class="pagination justify-content-center">
-            <li class="page-item disabled">
-              <a class="page-link" href="#" tabindex="-1" aria-disabled="true"
-                >Trước</a
-              >
-            </li>
-            <li class="page-item active">
-              <a class="page-link" href="#">1</a>
-            </li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item">
-              <a class="page-link" href="#">Sau</a>
-            </li>
-          </ul>
-        </nav>
+            <!-- Pagination (nếu cần) -->
+            <nav aria-label="Product Page Navigation" class="mt-5">
+              <ul class="pagination justify-content-center">
+                <li class="page-item disabled">
+                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Trước</a>
+                </li>
+                <li class="page-item active">
+                  <a class="page-link" href="#">1</a>
+                </li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                  <a class="page-link" href="#">Sau</a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
       </div>
     </main>
 

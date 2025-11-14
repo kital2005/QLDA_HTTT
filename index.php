@@ -19,6 +19,7 @@ if ($result_nav_categories) {
     }
 }
 ?>
+<<<<<<< HEAD
 <?php
 // Lấy 4 sản phẩm nổi bật (ví dụ: rating cao)
 $featured_products = [];
@@ -40,6 +41,8 @@ if ($result_newest && $result_newest->num_rows > 0) {
     }
 }
 ?>
+=======
+>>>>>>> 383b77155c5f2f2c1874f5e053ca94286b7ba520
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
   <head>
@@ -64,6 +67,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
     />
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css" />
+<<<<<<< HEAD
     <!-- GHI CHÚ: Thêm CSS để làm nổi bật và tạo hiệu ứng chớp cho tiêu đề Flash Sale -->
     <style>
       @keyframes flash-effect {
@@ -95,6 +99,8 @@ if ($result_newest && $result_newest->num_rows > 0) {
         display: block; /* Đảm bảo căn giữa chuẩn */
       }
     </style>
+=======
+>>>>>>> 383b77155c5f2f2c1874f5e053ca94286b7ba520
   </head>
   <body>
     <!-- Header & Navigation -->
@@ -267,9 +273,14 @@ if ($result_newest && $result_newest->num_rows > 0) {
     <div class="container">
         <!-- THAY ĐỔI: Tiêu đề sẽ được thay đổi bằng hiệu ứng gõ chữ từ JS -->
         <div class="section-header text-center mb-5">
+<<<<<<< HEAD
             <!-- THAY ĐỔI: Bỏ hiệu ứng gõ chữ, thay bằng text tĩnh để áp dụng animation chớp chớp -->
             <h2 class="section-title flash-sale-title"><i class="fas fa-bolt"></i> Flash Sale</h2>
             <p class="section-subtitle flash-sale-subtitle">Ưu đãi chớp nhoáng, đừng bỏ lỡ!</p>
+=======
+            <h2 class="section-title"><i class="fas fa-bolt text-warning"></i> <span id="typed-flash-sale"></span></h2>
+            <p class="section-subtitle">Ưu đãi chớp nhoáng, đừng bỏ lỡ!</p>
+>>>>>>> 383b77155c5f2f2c1874f5e053ca94286b7ba520
         </div>
 
         <?php
@@ -362,6 +373,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
           </p>
         </div>
         <div class="row g-4">
+<<<<<<< HEAD
           <?php if (!empty($featured_products)): ?>
             <?php foreach ($featured_products as $product): ?>
               <div class="col-md-6 col-lg-3">
@@ -411,6 +423,181 @@ if ($result_newest && $result_newest->num_rows > 0) {
           <?php else: ?>
             <p class="text-center">Chưa có sản phẩm nổi bật nào.</p>
           <?php endif; ?>
+=======
+          <!-- Product 1 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-danger position-absolute">Sale</div>
+              <div class="product-image-container">
+                <img src="./images/sp/IPorn Ver 2/IPhone 15 Pro Max/iphone-15-pro-max-titan-den-cu.jpg" class="card-img-top p-3" alt="iPhone 15 Pro Max" />
+                <div class="product-overlay">
+                  <a href="chitietsanpham.php?id=1" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">iPhone 15 Pro Max</h5>
+                  <div class="price">
+                    <span class="current-price">29.990.000₫</span>
+                    <span class="original-price">32.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_1 = round(4.8); // Giả sử rating là 4.8
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_1) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(315)</span> <!-- Giả sử 315 reviews -->
+                </div>
+                <p class="card-text">
+                  Khung titan, chip A17 Pro mạnh mẽ, và hệ thống camera chuyên
+                  nghiệp.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="1">
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <!-- Product 2 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="product-image-container">
+                <img src="./images/sp/samsung/Samsung S24 Ultra/samsung-galaxy-s24-ultra-cam-titan.jpg" class="card-img-top p-3" alt="Samsung Galaxy S24 Ultra" />
+                <div class="product-overlay">
+                  <a href="chitietsanpham.php?id=2" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Samsung Galaxy S24 Ultra</h5>
+                  <div class="price">
+                    <span class="current-price">31.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_2 = round(4.6); // Giả sử rating là 4.6
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_2) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(258)</span> <!-- Giả sử 258 reviews -->
+                </div>
+                <p class="card-text">
+                  Tích hợp Galaxy AI, bút S Pen thông minh và camera zoom đỉnh
+                  cao.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="2">
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <!-- Product 3 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-success position-absolute">New</div>
+              <div class="product-image-container">
+                <img src="./images/sp/oppo/OPPO Find x8 Ultra/oppo-find-x8-ultra-den.jpg" class="card-img-top p-3" alt="Oppo Find X8 Ultra" />
+                <div class="product-overlay">
+                  <a href="chitietsanpham.php?id=3" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Oppo Find X8 Ultra</h5>
+                  <div class="price">
+                    <span class="current-price">33.490.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_3 = round(4.9); // Giả sử rating là 4.9
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_3) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(185)</span> <!-- Giả sử 185 reviews -->
+                </div>
+                <p class="card-text">
+                  Hệ thống camera Hasselblad thế hệ mới, màn hình ProXDR siêu
+                  sáng và hiệu năng đỉnh cao.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="3">
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <!-- Product 4 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-danger position-absolute">Sale</div>
+              <div class="product-image-container">
+                <img src="./images/sp/xiaomi/Xiaomi 17 Pro Max/xiaomi-17-pro-max-tim.jpg" class="card-img-top p-3" alt="Xiaomi 17 Pro Max" />
+                <div class="product-overlay">
+                  <a href="chitietsanpham.php?id=4" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Xiaomi 17 Pro Max</h5>
+                  <div class="price">
+                    <span class="current-price">28.990.000₫</span>
+                    <span class="original-price">31.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_4 = round(4.7); // Giả sử rating là 4.7
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_4) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(210)</span> <!-- Giả sử 210 reviews -->
+                </div>
+                <p class="card-text">
+                  Camera Leica chuyên nghiệp, sạc siêu nhanh HyperCharge 120W,
+                  màn hình CrystalRes AMOLED.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="4">
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+>>>>>>> 383b77155c5f2f2c1874f5e053ca94286b7ba520
         </div>
         <div class="text-center mt-5">
           <a href="sanpham.php" class="btn btn-outline-primary">Xem Tất cả Sản phẩm</a>
@@ -428,6 +615,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
           </p>
         </div>
         <div class="row g-4">
+<<<<<<< HEAD
           <?php if (!empty($newest_products)): ?>
             <?php foreach ($newest_products as $product): ?>
               <div class="col-md-6 col-lg-3">
@@ -475,6 +663,176 @@ if ($result_newest && $result_newest->num_rows > 0) {
           <?php else: ?>
             <p class="text-center">Chưa có sản phẩm mới nào.</p>
           <?php endif; ?>
+=======
+          <!-- New Product 1 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-primary position-absolute">Mới</div>
+              <div class="product-image-container">
+                <img src="./images/sp/samsung/Samsung Z Fold 7/samsung-galaxy-z-fold7-den-jet.jpg" class="card-img-top p-3" alt="Galaxy Z Fold6" />
+                <div class="product-overlay">
+                  <a href="sanpham.php" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Samsung Galaxy Z Fold 7</h5>
+                  <div class="price">
+                    <span class="current-price">47.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_5 = round(4.2); // Giả sử rating là 4.2
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_5) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(45)</span> <!-- Giả sử 45 reviews -->
+                </div>
+                <p class="card-text">
+                  Siêu phẩm gập thế hệ mới, mỏng hơn, nhẹ hơn và mạnh mẽ hơn với chip Snapdragon for Galaxy mới nhất.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="1"> <!-- Cần thay ID đúng -->
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <!-- New Product 2 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-primary position-absolute">Mới</div>
+              <div class="product-image-container">
+                <img src="./images/sp/IPorn Ver 2/IPhone 16 Pro Max/iphone-16-pro-max-titan-tu-nhien.jpg" class="card-img-top p-3" alt="iPhone 16 Pro" />
+                <div class="product-overlay">
+                  <a href="sanpham.php" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">iPhone 16 Pro Max</h5>
+                  <div class="price">
+                    <span class="current-price">38.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_6 = round(4.5); // Giả sử rating là 4.5
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_6) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(88)</span> <!-- Giả sử 88 reviews -->
+                </div>
+                <p class="card-text">
+                  Màn hình lớn hơn, nút 'Capture' mới và hiệu năng AI đột phá với chip A18 Pro.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="1"> <!-- Cần thay ID đúng -->
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <!-- New Product 3 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-primary position-absolute">Mới</div>
+              <div class="product-image-container">
+                <img src="./images/sp/oppo/OPPO Find x7 Ultra/oppo-find-x7-ultra-vang.jpg" class="card-img-top p-3" alt="Oppo Watch X" />
+                <div class="product-overlay">
+                  <a href="sanpham.php" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Oppo Find X7 Ultra</h5>
+                  <div class="price">
+                    <span class="current-price">32.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_7 = round(5.0); // Giả sử rating là 5.0
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_7) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(112)</span> <!-- Giả sử 112 reviews -->
+                </div>
+                <p class="card-text">
+                  Hệ thống camera HyperTone hàng đầu, hiệu năng mạnh mẽ và thiết kế da sang trọng.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="1"> <!-- Cần thay ID đúng -->
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <!-- New Product 4 -->
+          <div class="col-md-6 col-lg-3">
+            <div class="card product-card h-100">
+              <div class="badge bg-primary position-absolute">Mới</div>
+              <div class="product-image-container">
+                <img src="./images/sp/xiaomi/Xiaomi 15T Pro/xiaomi-15t-pro-xam.jpg" class="card-img-top p-3" alt="Xiaomi Pad 7 Pro" />
+                <div class="product-overlay">
+                  <a href="sanpham.php" class="btn btn-light">Xem chi tiết</a>
+                </div>
+              </div>
+              <div class="card-body">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="card-title mb-0">Xiaomi 15T Pro</h5>
+                  <div class="price">
+                    <span class="current-price">15.990.000₫</span>
+                  </div>
+                </div>
+                <div class="ratings mb-2">
+                  <?php 
+                    $stars_8 = round(4.8); // Giả sử rating là 4.8
+                    for ($i = 1; $i <= 5; $i++) {
+                        $star_class = ($i <= $stars_8) ? 'text-warning' : 'text-secondary';
+                        echo '<i class="fas fa-star ' . $star_class . '"></i>';
+                    }
+                  ?>
+                  <span class="ms-1">(95)</span> <!-- Giả sử 95 reviews -->
+                </div>
+                <p class="card-text">
+                  Flagship killer với chip Dimensity 9400, màn hình CrystalRes và sạc nhanh 120W.
+                </p>
+              </div>
+              <div class="card-footer bg-transparent">
+                <form action="cart_actions.php" method="POST" class="d-grid">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="product_id" value="1"> <!-- Cần thay ID đúng -->
+                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                </form>
+              </div>
+            </div>
+          </div>
+>>>>>>> 383b77155c5f2f2c1874f5e053ca94286b7ba520
         </div>
         <div class="text-center mt-5">
           <a href="sanpham.php" class="btn btn-outline-primary">Xem Tất cả Sản phẩm Mới</a>

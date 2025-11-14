@@ -365,6 +365,12 @@ switch ($sort_order) {
                                         <span class="original-price text-muted text-decoration-line-through ms-2"><?php echo $original_price_formatted; ?></span>
                                     <?php endif; ?>
                                 </div>
+<<<<<<< HEAD
+=======
+                                <p class="card-text">
+                                    <?php echo htmlspecialchars($row["description"]); ?>
+                                </p>
+>>>>>>> 383b77155c5f2f2c1874f5e053ca94286b7ba520
                             </div>
                             <div class="card-footer bg-transparent">
                                 <form action="cart_actions.php" method="POST" class="d-grid">

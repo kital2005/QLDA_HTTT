@@ -19,19 +19,19 @@ if (!empty($_SESSION['cart'])) {
     $ids_placeholder = implode(',', array_fill(0, count($product_ids), '?'));
     $types = str_repeat('i', count($product_ids));
     
-    $sql = "SELECT id, name, price, mainImage, category_id FROM products WHERE id IN ($ids_placeholder)";
+    $sql = "SELECT MA_SP, TEN, GIA_BAN, ANH_DAI_DIEN, MA_DM FROM SAN_PHAM WHERE MA_SP IN ($ids_placeholder)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$product_ids);
     $stmt->execute();
     $result = $stmt->get_result();
     
     while ($product = $result->fetch_assoc()) {
-        $quantity = $_SESSION['cart'][$product['id']];
+        $quantity = $_SESSION['cart'][$product['MA_SP']];
         $product['quantity'] = $quantity;
-        $total_price += $product['price'] * $quantity;
+        $total_price += $product['GIA_BAN'] * $quantity;
         $cart_products[] = $product;
-        if (!in_array($product['category_id'], $category_ids_in_cart) && $product['category_id'] != null) {
-            $category_ids_in_cart[] = $product['category_id'];
+        if (!in_array($product['MA_DM'], $category_ids_in_cart) && $product['MA_DM'] != null) {
+            $category_ids_in_cart[] = $product['MA_DM'];
         }
     }
     $stmt->close();
@@ -39,7 +39,7 @@ if (!empty($_SESSION['cart'])) {
     // Lấy sản phẩm gợi ý (cùng hãng, khác sản phẩm trong giỏ)
     if (!empty($category_ids_in_cart)) {
         $cat_ids_placeholder = implode(',', array_fill(0, count($category_ids_in_cart), '?'));
-        $sql_suggest = "SELECT * FROM products WHERE category_id IN ($cat_ids_placeholder) AND id NOT IN ($ids_placeholder) ORDER BY RAND() LIMIT 4";
+        $sql_suggest = "SELECT * FROM SAN_PHAM WHERE MA_DM IN ($cat_ids_placeholder) AND MA_SP NOT IN ($ids_placeholder) ORDER BY RAND() LIMIT 4";
         $stmt_suggest = $conn->prepare($sql_suggest);
         $stmt_suggest->bind_param(str_repeat('i', count($category_ids_in_cart)) . $types, ...$category_ids_in_cart, ...$product_ids);
         $stmt_suggest->execute();
@@ -92,17 +92,15 @@ if (!empty($_SESSION['cart'])) {
             $accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
             $phone_categories_nav = [];
             $accessory_categories_nav = [];
-            $sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+            $sql_nav_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
             $result_nav_categories = $conn->query($sql_nav_categories);
             if ($result_nav_categories) {
                 while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
-                    if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+                    if (in_array($row_nav_cat['MA_DM'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
                     else $phone_categories_nav[] = $row_nav_cat;
                 }
             }
-            $conn->close();
           ?>
-          </button>
           <div class="collapse navbar-collapse" id="navbarNav">
             <!-- Search Form -->
             <form class="search-container mx-lg-auto my-2 my-lg-0 d-flex" action="sanpham.php" method="GET">
@@ -122,7 +120,7 @@ if (!empty($_SESSION['cart'])) {
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <li><h6 class="dropdown-header">Điện thoại</h6></li>
                   <?php foreach ($phone_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
                   
@@ -130,7 +128,7 @@ if (!empty($_SESSION['cart'])) {
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -150,7 +148,7 @@ if (!empty($_SESSION['cart'])) {
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
                       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                           <li><a class="dropdown-item" href="account.php">Tài khoản của tôi</a></li>
@@ -174,8 +172,14 @@ if (!empty($_SESSION['cart'])) {
               <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-moon"></i>
               </button>
-              <a href="cart.php" class="btn btn-primary ms-2 active">
+              <a href="cart.php" class="btn btn-primary ms-2 active position-relative" aria-label="Giỏ hàng">
                 <i class="fas fa-shopping-cart"></i>
+                <?php 
+                  $cart_count = isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0;
+                  if ($cart_count > 0) {
+                      echo '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">' . $cart_count . '</span>';
+                  }
+                ?>
               </a>
             </div>
           </div>
@@ -210,28 +214,28 @@ if (!empty($_SESSION['cart'])) {
               <div class="cart-item mb-3">
                 <div class="row align-items-center">
                   <div class="col-md-2 text-center">
-                    <a href="chitietsanpham.php?id=<?php echo $item['id']; ?>">
-                      <img src="<?php echo htmlspecialchars($item['mainImage']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="cart-item-img" />
+                    <a href="chitietsanpham.php?id=<?php echo $item['MA_SP']; ?>">
+                      <img src="<?php echo htmlspecialchars($item['ANH_DAI_DIEN']); ?>" alt="<?php echo htmlspecialchars($item['TEN']); ?>" class="cart-item-img" />
                     </a>
                   </div>
                   <div class="col-md-4 cart-item-details">
-                    <a href="chitietsanpham.php?id=<?php echo $item['id']; ?>" class="text-dark">
-                      <h5><?php echo htmlspecialchars($item['name']); ?></h5>
+                    <a href="chitietsanpham.php?id=<?php echo $item['MA_SP']; ?>" class="text-dark">
+                      <h5><?php echo htmlspecialchars($item['TEN']); ?></h5>
                     </a>
-                    <p class="text-muted mb-0">Đơn giá: <?php echo number_format($item['price'], 0, ',', '.'); ?>₫</p>
+                    <p class="text-muted mb-0">Đơn giá: <?php echo number_format($item['GIA_BAN'], 0, ',', '.'); ?>₫</p>
                   </div>
                   <div class="col-md-3">
                     <form action="cart_actions.php" method="POST" class="quantity-input mx-auto">
                         <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="product_id" value="<?php echo $item['id']; ?>">
+                        <input type="hidden" name="product_id" value="<?php echo $item['MA_SP']; ?>">
                         <input type="number" name="quantity" class="form-control" value="<?php echo $item['quantity']; ?>" min="1" onchange="this.form.submit()">
                     </form>
                   </div>
                   <div class="col-md-2 text-md-end">
-                    <span class="fw-bold"><?php echo number_format($item['price'] * $item['quantity'], 0, ',', '.'); ?>₫</span>
+                    <span class="fw-bold"><?php echo number_format($item['GIA_BAN'] * $item['quantity'], 0, ',', '.'); ?>₫</span>
                   </div>
                   <div class="col-md-1 text-md-end">
-                    <a href="cart_actions.php?action=remove&product_id=<?php echo $item['id']; ?>" class="btn btn-sm btn-outline-danger border-0" title="Xóa sản phẩm">
+                    <a href="cart_actions.php?action=remove&product_id=<?php echo $item['MA_SP']; ?>" class="btn btn-sm btn-outline-danger border-0" title="Xóa sản phẩm">
                       <i class="fas fa-trash"></i>
                     </a>
                   </div>
@@ -296,19 +300,19 @@ if (!empty($_SESSION['cart'])) {
               <div class="col-md-6 col-lg-3">
                 <div class="card product-card h-100">
                   <div class="product-image-container">
-                    <img src="<?php echo htmlspecialchars($sproduct['mainImage']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($sproduct['name']); ?>" />
+                    <img src="<?php echo htmlspecialchars($sproduct['ANH_DAI_DIEN']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($sproduct['TEN']); ?>" />
                     <div class="product-overlay">
-                      <a href="chitietsanpham.php?id=<?php echo $sproduct['id']; ?>" class="btn btn-light">Xem chi tiết</a>
+                      <a href="chitietsanpham.php?id=<?php echo $sproduct['MA_SP']; ?>" class="btn btn-light">Xem chi tiết</a>
                     </div>
                   </div>
                   <div class="card-body">
-                    <h5 class="card-title"><?php echo htmlspecialchars($sproduct['name']); ?></h5>
-                    <div class="price"><span class="current-price"><?php echo number_format($sproduct['price'], 0, ',', '.'); ?>₫</span></div>
+                    <h5 class="card-title"><?php echo htmlspecialchars($sproduct['TEN']); ?></h5>
+                    <div class="price"><span class="current-price"><?php echo number_format($sproduct['GIA_BAN'], 0, ',', '.'); ?>₫</span></div>
                   </div>
                   <div class="card-footer bg-transparent">
                     <form action="cart_actions.php" method="POST" class="d-grid">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="product_id" value="<?php echo $sproduct['id']; ?>">
+                        <input type="hidden" name="product_id" value="<?php echo $sproduct['MA_SP']; ?>">
                         <button type="submit" class="btn btn-primary w-100">Thêm vào giỏ</button>
                     </form>
                   </div>

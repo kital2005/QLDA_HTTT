@@ -9,7 +9,7 @@ if ($order_id <= 0) {
 }
 
 // Lấy thông tin đơn hàng
-$stmt = $conn->prepare("SELECT * FROM orders WHERE id = ?");
+$stmt = $conn->prepare("SELECT * FROM DON_HANG WHERE MA_DH = ?");
 $stmt->bind_param("i", $order_id);
 $stmt->execute();
 $order = $stmt->get_result()->fetch_assoc();
@@ -22,10 +22,10 @@ if (!$order) {
 
 // Lấy chi tiết sản phẩm trong đơn hàng
 $stmt_items = $conn->prepare("
-    SELECT oi.quantity, oi.price, p.name, p.mainImage 
-    FROM order_items oi 
-    JOIN products p ON oi.product_id = p.id 
-    WHERE oi.order_id = ?
+    SELECT ctdh.SO_LUONG, ctdh.DON_GIA, sp.TEN, sp.ANH_DAI_DIEN 
+    FROM CHI_TIET_DON_HANG ctdh 
+    JOIN SAN_PHAM sp ON ctdh.MA_SP = sp.MA_SP 
+    WHERE ctdh.MA_DH = ?
 ");
 $stmt_items->bind_param("i", $order_id);
 $stmt_items->execute();
@@ -35,8 +35,8 @@ $stmt_items->close();
 $conn->close();
 
 // Xác định trạng thái hiện tại
-$status_list = ['pending' => 'Chờ xử lý', 'shipping' => 'Đang vận chuyển', 'delivered' => 'Đã giao', 'cancelled' => 'Đã hủy'];
-$current_status = $order['status'];
+$status_list = ['dang_cho' => 'Chờ xử lý', 'dang_xac_nhan' => 'Đã xác nhận', 'dang_giao' => 'Đang vận chuyển', 'da_giao' => 'Đã giao', 'da_huy' => 'Đã hủy'];
+$current_status = $order['TRANG_THAI'];
 $status_keys = array_keys($status_list);
 $current_status_index = array_search($current_status, $status_keys);
 ?>
@@ -72,7 +72,7 @@ $current_status_index = array_search($current_status, $status_keys);
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
                       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                           <li><a class="dropdown-item" href="account.php">Tài khoản của tôi</a></li>
@@ -100,13 +100,13 @@ $current_status_index = array_search($current_status, $status_keys);
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white text-center">
                 <h2>Đặt hàng thành công!</h2>
-                <p class="mb-0">Cảm ơn bạn đã mua sắm tại TechPhone. Mã đơn hàng của bạn là: <strong>#<?php echo $order['id']; ?></strong></p>
+                <p class="mb-0">Cảm ơn bạn đã mua sắm tại TechPhone. Mã đơn hàng của bạn là: <strong>#<?php echo $order['MA_DH']; ?></strong></p>
             </div>
             <div class="card-body p-4">
                 <h4 class="mb-4">Trạng thái đơn hàng</h4>
                 <div class="status-tracker mb-5">
-                    <div class="status-line" style="width: <?php echo ($current_status_index / (count($status_keys) - 2) * 100); ?>%;"></div>
-                    <?php foreach ($status_list as $key => $value): if($key == 'cancelled') continue; ?>
+                    <div class="status-line" style="width: <?php echo ($current_status_index > 0 ? ($current_status_index / (count($status_keys) - 2) * 100) : 0); ?>%;"></div>
+                    <?php foreach ($status_list as $key => $value): if($key == 'da_huy') continue; ?>
                         <?php
                             $step_class = '';
                             $status_index = array_search($key, $status_keys);
@@ -118,9 +118,10 @@ $current_status_index = array_search($current_status, $status_keys);
                         ?>
                         <div class="status-step <?php echo $step_class; ?>">
                             <div class="status-icon">
-                                <?php if($key == 'pending') echo '<i class="fas fa-receipt"></i>'; ?>
-                                <?php if($key == 'shipping') echo '<i class="fas fa-truck"></i>'; ?>
-                                <?php if($key == 'delivered') echo '<i class="fas fa-check-circle"></i>'; ?>
+                                <?php if($key == 'dang_cho') echo '<i class="fas fa-receipt"></i>'; ?>
+                                <?php if($key == 'dang_xac_nhan') echo '<i class="fas fa-box-open"></i>'; ?>
+                                <?php if($key == 'dang_giao') echo '<i class="fas fa-truck"></i>'; ?>
+                                <?php if($key == 'da_giao') echo '<i class="fas fa-check-circle"></i>'; ?>
                             </div>
                             <p class="mb-0"><?php echo $value; ?></p>
                         </div>
@@ -131,14 +132,14 @@ $current_status_index = array_search($current_status, $status_keys);
                 <div class="row">
                     <div class="col-md-6">
                         <h5>Thông tin giao hàng</h5>
-                        <p><strong>Tên người nhận:</strong> <?php echo htmlspecialchars($order['customer_name']); ?></p>
-                        <p><strong>Số điện thoại:</strong> <?php echo htmlspecialchars($order['customer_phone']); ?></p>
-                        <p><strong>Địa chỉ:</strong> <?php echo htmlspecialchars($order['customer_address']); ?></p>
+                        <p><strong>Tên người nhận:</strong> <?php echo htmlspecialchars($order['TEN_KHACH_HANG']); ?></p>
+                        <p><strong>Số điện thoại:</strong> <?php echo htmlspecialchars($order['SDT_KHACH_HANG']); ?></p>
+                        <p><strong>Địa chỉ:</strong> <?php echo htmlspecialchars($order['DIA_CHI_GIAO_HANG']); ?></p>
                     </div>
                     <div class="col-md-6">
                         <h5>Thông tin thanh toán</h5>
-                        <p><strong>Phương thức:</strong> <?php echo ($order['payment_method'] == 'cod') ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản'; ?></p>
-                        <p><strong>Tổng tiền:</strong> <strong class="text-danger fs-5"><?php echo number_format($order['total_amount'], 0, ',', '.'); ?>₫</strong></p>
+                        <p><strong>Phương thức:</strong> <?php echo ($order['PHUONG_THUC_THANH_TOAN'] == 'cod') ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản'; ?></p>
+                        <p><strong>Tổng tiền:</strong> <strong class="text-danger fs-5"><?php echo number_format($order['TONG_TIEN'], 0, ',', '.'); ?>₫</strong></p>
                     </div>
                 </div>
 
@@ -146,12 +147,12 @@ $current_status_index = array_search($current_status, $status_keys);
                 <ul class="list-group">
                     <?php foreach ($order_items as $item): ?>
                     <li class="list-group-item d-flex align-items-center">
-                        <img src="<?php echo htmlspecialchars($item['mainImage']); ?>" width="60" class="me-3 rounded">
+                        <img src="<?php echo htmlspecialchars($item['ANH_DAI_DIEN']); ?>" width="60" class="me-3 rounded">
                         <div class="flex-grow-1">
-                            <h6 class="mb-0"><?php echo htmlspecialchars($item['name']); ?></h6>
-                            <small>Số lượng: <?php echo $item['quantity']; ?></small>
+                            <h6 class="mb-0"><?php echo htmlspecialchars($item['TEN']); ?></h6>
+                            <small>Số lượng: <?php echo $item['SO_LUONG']; ?></small>
                         </div>
-                        <span><?php echo number_format($item['price'] * $item['quantity'], 0, ',', '.'); ?>₫</span>
+                        <span><?php echo number_format($item['DON_GIA'] * $item['SO_LUONG'], 0, ',', '.'); ?>₫</span>
                     </li>
                     <?php endforeach; ?>
                 </ul>

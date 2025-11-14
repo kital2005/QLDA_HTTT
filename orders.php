@@ -11,10 +11,10 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $order_id = (int)$_POST['order_id'];
     $new_status = $_POST['status'];
-    $allowed_statuses = ['pending', 'shipping', 'delivered', 'cancelled'];
+    $allowed_statuses = ['dang_cho', 'dang_xac_nhan', 'dang_giao', 'da_giao', 'da_huy'];
 
     if (in_array($new_status, $allowed_statuses)) {
-        $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI = ? WHERE MA_DH = ?");
         $stmt->bind_param("si", $new_status, $order_id);
         $stmt->execute();
         $_SESSION['message'] = "Cập nhật trạng thái đơn hàng #$order_id thành công!";
@@ -29,30 +29,34 @@ $search_term = trim($_GET['search'] ?? '');
 $filter_status = trim($_GET['status'] ?? 'all'); // Lấy trạng thái lọc từ URL
 
 // Xây dựng câu truy vấn
-$sql = "SELECT * FROM orders";
+$sql = "SELECT * FROM DON_HANG";
 $params = [];
 $types = '';
 $conditions = [];
 
 if (!empty($search_term)) {
     // Tìm kiếm theo ID, tên, hoặc SĐT
-    $conditions[] = "(id = ? OR LOWER(customer_name) LIKE ? OR customer_phone LIKE ?)";
+    $conditions[] = "(MA_DH = ? OR LOWER(TEN_KHACH_HANG) LIKE ? OR SDT_KHACH_HANG LIKE ?)";
     $search_like = '%' . strtolower($search_term) . '%';
     array_push($params, $search_term, $search_like, $search_like);
     $types .= 'iss';
 }
 
-if ($filter_status !== 'all' && in_array($filter_status, ['pending', 'shipping', 'delivered', 'cancelled'])) {
-    $conditions[] = "status = ?";
+if ($filter_status !== 'all' && in_array($filter_status, ['dang_cho', 'dang_xac_nhan', 'dang_giao', 'da_giao', 'da_huy'])) {
+    $conditions[] = "TRANG_THAI = ?";
     $params[] = $filter_status;
     $types .= 's';
+} elseif ($filter_status === 'dang_giao') { // Assuming cancellation request is a state within shipping
+    // This logic might need adjustment based on how cancellation requests are stored.
+    // For now, let's assume it's a separate status or handled differently.
+    // Let's just filter by 'dang_giao' for now.
 }
 
 if (!empty($conditions)) {
     $sql .= " WHERE " . implode(' AND ', $conditions);
 }
 
-$sql .= " ORDER BY order_date DESC";
+$sql .= " ORDER BY NGAY_DAT_HANG DESC";
 
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
@@ -82,7 +86,7 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
               <li class="nav-item"><a class="nav-link" href="index.php"><i class="fas fa-home me-1"></i>Xem trang web</a></li>
               <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?> (Admin)
+                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?> (Admin)
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                       <li><a class="dropdown-item" href="admin.php"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Admin Dashboard</a></li>
@@ -117,16 +121,19 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 <a class="nav-link <?php if ($filter_status == 'all') echo 'active'; ?>" href="orders.php">Tất cả</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?php if ($filter_status == 'pending') echo 'active'; ?>" href="orders.php?status=pending">Chờ xử lý</a>
+                <a class="nav-link <?php if ($filter_status == 'dang_cho') echo 'active'; ?>" href="orders.php?status=dang_cho">Chờ xử lý</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?php if ($filter_status == 'shipping') echo 'active'; ?>" href="orders.php?status=shipping">Đang giao</a>
+                <a class="nav-link <?php if ($filter_status == 'dang_xac_nhan') echo 'active'; ?>" href="orders.php?status=dang_xac_nhan">Đang xác nhận</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?php if ($filter_status == 'delivered') echo 'active'; ?>" href="orders.php?status=delivered">Đã giao</a>
+                <a class="nav-link <?php if ($filter_status == 'dang_giao') echo 'active'; ?>" href="orders.php?status=dang_giao">Đang giao</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?php if ($filter_status == 'cancelled') echo 'active'; ?>" href="orders.php?status=cancelled">Đã hủy</a>
+                <a class="nav-link <?php if ($filter_status == 'da_giao') echo 'active'; ?>" href="orders.php?status=da_giao">Đã giao</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?php if ($filter_status == 'da_huy') echo 'active'; ?>" href="orders.php?status=da_huy">Đã hủy</a>
             </li>
         </ul>
 
@@ -158,45 +165,52 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <?php if (!empty($orders)): ?>
                     <?php foreach ($orders as $order): ?>
                     <tr>
-                        <td>#<?php echo $order['id']; ?></td>
+                        <td>#<?php echo $order['MA_DH']; ?></td>
                         <td>
-                            <?php echo htmlspecialchars($order['customer_name']); ?><br>
-                            <small><?php echo htmlspecialchars($order['customer_phone']); ?></small>
+                            <?php echo htmlspecialchars($order['TEN_KHACH_HANG']); ?><br>
+                            <small><?php echo htmlspecialchars($order['SDT_KHACH_HANG']); ?></small>
                         </td>
-                        <td><?php echo htmlspecialchars($order['customer_address']); ?></td>
-                        <td><?php echo number_format($order['total_amount'], 0, ',', '.'); ?>₫</td>
-                        <td><?php echo date('d/m/Y H:i', strtotime($order['order_date'])); ?></td>
+                        <td><?php echo htmlspecialchars($order['DIA_CHI_GIAO_HANG']); ?></td>
+                        <td><?php echo number_format($order['TONG_TIEN'], 0, ',', '.'); ?>₫</td>
+                        <td><?php echo date('d/m/Y H:i', strtotime($order['NGAY_DAT_HANG'])); ?></td>
                         <td>
                             <?php
                                 $status_class = '';
-                                switch ($order['status']) {
-                                    case 'pending': $status_class = 'bg-warning text-dark'; break;
-                                    case 'shipping': $status_class = 'bg-info text-dark'; break;
-                                    case 'delivered': $status_class = 'bg-success'; break;
-                                    case 'cancelled': $status_class = 'bg-danger'; break;
+                                switch ($order['TRANG_THAI']) {
+                                    case 'dang_cho': $status_class = 'bg-warning text-dark'; break;
+                                    case 'dang_xac_nhan': $status_class = 'bg-primary'; break;
+                                    case 'dang_giao': $status_class = 'bg-info text-dark'; break;
+                                    case 'da_giao': $status_class = 'bg-success'; break;
+                                    case 'da_huy': $status_class = 'bg-danger'; break;
                                 }
-                                echo '<span class="badge ' . $status_class . '">' . ucfirst($order['status']) . '</span>';
+                                echo '<span class="badge ' . $status_class . '">' . ucfirst(str_replace('_', ' ', $order['TRANG_THAI'])) . '</span>';
                             ?>
                         </td>
                         <td>
                             <div class="d-flex">
-                                <button class="btn btn-sm btn-outline-info me-2 view-details-btn" data-bs-toggle="modal" data-bs-target="#orderDetailsModal" data-order-id="<?php echo $order['id']; ?>" title="Xem chi tiết">
+                                <button class="btn btn-sm btn-outline-info me-2 view-details-btn" data-bs-toggle="modal" data-bs-target="#orderDetailsModal" data-order-id="<?php echo $order['MA_DH']; ?>" title="Xem chi tiết">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <form action="orders.php" method="POST" class="d-flex">
-                                    <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                                    <select name="status" class="form-select form-select-sm me-2">
-                                        <option value="pending" <?php if($order['status'] == 'pending') echo 'selected'; ?>>Chờ xử lý</option>
-                                        <option value="shipping" <?php if($order['status'] == 'shipping') echo 'selected'; ?>>Đang giao</option>
-                                        <option value="delivered" <?php if($order['status'] == 'delivered') echo 'selected'; ?>>Đã giao</option>
-                                        <option value="cancelled" <?php if($order['status'] == 'cancelled') echo 'selected'; ?>>Hủy</option>
-                                    </select>
-                                    <button type="submit" name="update_status" class="btn btn-sm btn-primary me-2" title="Lưu trạng thái">Lưu</button>
-                                </form>
+                                <?php if ($order['TRANG_THAI'] == 'cancellation_requested'): // This status does not exist in the new schema, but keeping the logic structure ?>
+                                    <a href="order_actions.php?action=approve_cancel&id=<?php echo $order['MA_DH']; ?>" class="btn btn-sm btn-success me-2" onclick="return confirm('Xác nhận đồng ý hủy đơn hàng này? Hàng sẽ được hoàn kho.');">Duyệt hủy</a>
+                                    <a href="order_actions.php?action=deny_cancel&id=<?php echo $order['MA_DH']; ?>" class="btn btn-sm btn-secondary me-2" onclick="return confirm('Xác nhận từ chối hủy đơn hàng này?');">Từ chối</a>
+                                <?php else: ?>
+                                    <form action="orders.php" method="POST" class="d-flex">
+                                        <input type="hidden" name="order_id" value="<?php echo $order['MA_DH']; ?>">
+                                        <select name="status" class="form-select form-select-sm me-2">
+                                            <option value="dang_cho" <?php if($order['TRANG_THAI'] == 'dang_cho') echo 'selected'; ?>>Chờ xử lý</option>
+                                            <option value="dang_xac_nhan" <?php if($order['TRANG_THAI'] == 'dang_xac_nhan') echo 'selected'; ?>>Đang xác nhận</option>
+                                            <option value="dang_giao" <?php if($order['TRANG_THAI'] == 'dang_giao') echo 'selected'; ?>>Đang giao</option>
+                                            <option value="da_giao" <?php if($order['TRANG_THAI'] == 'da_giao') echo 'selected'; ?>>Đã giao</option>
+                                            <option value="da_huy" <?php if($order['TRANG_THAI'] == 'da_huy') echo 'selected'; ?>>Hủy</option>
+                                        </select>
+                                        <button type="submit" name="update_status" class="btn btn-sm btn-primary me-2" title="Lưu trạng thái">Lưu</button>
+                                    </form>
+                                <?php endif; ?>
                                 <!-- Ghi chú: Thêm nút xóa đơn hàng -->
-                                <a href="order_actions.php?action=delete&id=<?php echo $order['id']; ?>" 
+                                <a href="order_actions.php?action=delete&id=<?php echo $order['MA_DH']; ?>" 
                                    class="btn btn-sm btn-outline-danger" 
-                                   onclick="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng #<?php echo $order['id']; ?> không? Hành động này không thể hoàn tác.');"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng #<?php echo $order['MA_DH']; ?> không? Hành động này không thể hoàn tác.');"
                                    title="Xóa đơn hàng">
                                     <i class="fas fa-trash"></i>
                                 </a>

@@ -1,8 +1,7 @@
-<?php
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+<?php // Đảm bảo session đã được bắt đầu trong config.php
+require_once "config.php";
 
+// Bảo mật: Chỉ admin mới được truy cập
 // Bảo mật: Chỉ admin mới được truy cập
 if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     header("location: index.php");
@@ -16,18 +15,18 @@ $search_term = trim($_GET['search'] ?? '');
 
 // Xây dựng câu truy vấn
 $categories = [];
-$sql = "SELECT * FROM categories";
+$sql = "SELECT * FROM DANH_MUC";
 $params = [];
 $types = '';
 
 if (!empty($search_term)) {
-    $sql .= " WHERE LOWER(name) LIKE ?";
+    $sql .= " WHERE LOWER(TEN) LIKE ?";
     $search_like = '%' . strtolower($search_term) . '%';
     $params[] = &$search_like;
     $types .= 's';
 }
 
-$sql .= " ORDER BY name ASC";
+$sql .= " ORDER BY TEN ASC";
 
 $stmt = $conn->prepare($sql);
 if (!empty($search_term)) {
@@ -65,7 +64,7 @@ if ($result) {
               <li class="nav-item"><a class="nav-link" href="index.php"><i class="fas fa-home me-1"></i>Xem trang web</a></li>
               <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?> (Admin)
+                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?> (Admin)
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                       <li><a class="dropdown-item" href="admin.php"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Admin Dashboard</a></li>
@@ -122,20 +121,20 @@ if ($result) {
                     <?php if (!empty($categories)): ?>
                         <?php foreach ($categories as $category): ?>
                             <tr>
-                                <td><?php echo $category['id']; ?></td>
-                                <td><?php echo htmlspecialchars($category['name']); ?></td>
-                                <td><?php echo htmlspecialchars($category['description']); ?></td>
+                                <td><?php echo $category['MA_DM']; ?></td>
+                                <td><?php echo htmlspecialchars($category['TEN']); ?></td>
+                                <td><?php echo htmlspecialchars($category['MO_TA']); ?></td>
                                 <td>
                                     <button class="btn btn-sm btn-warning edit-btn" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#categoryModal"
-                                            data-id="<?php echo $category['id']; ?>"
-                                            data-name="<?php echo htmlspecialchars($category['name']); ?>"
-                                            data-description="<?php echo htmlspecialchars($category['description']); ?>"
+                                            data-id="<?php echo $category['MA_DM']; ?>"
+                                            data-name="<?php echo htmlspecialchars($category['TEN']); ?>"
+                                            data-description="<?php echo htmlspecialchars($category['MO_TA']); ?>"
                                             data-action="edit">
                                         <i class="fas fa-edit"></i> Sửa
                                     </button>
-                                    <a href="category_actions.php?action=delete&id=<?php echo $category['id']; ?>" 
+                                    <a href="category_actions.php?action=delete&id=<?php echo $category['MA_DM']; ?>" 
                                        class="btn btn-sm btn-danger" 
                                        onclick="return confirm('Bạn có chắc chắn muốn xóa hãng này không?');">
                                         <i class="fas fa-trash"></i> Xóa

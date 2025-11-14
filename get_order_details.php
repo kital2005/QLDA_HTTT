@@ -17,7 +17,7 @@ if ($order_id <= 0) {
 }
 
 // Lấy thông tin chung của đơn hàng
-$stmt_order = $conn->prepare("SELECT * FROM orders WHERE id = ?");
+$stmt_order = $conn->prepare("SELECT * FROM DON_HANG WHERE MA_DH = ?");
 $stmt_order->bind_param("i", $order_id);
 $stmt_order->execute();
 $order = $stmt_order->get_result()->fetch_assoc();
@@ -31,10 +31,10 @@ if (!$order) {
 
 // Lấy các sản phẩm trong đơn hàng
 $stmt_items = $conn->prepare("
-    SELECT oi.quantity, oi.price, p.name, p.mainImage 
-    FROM order_items oi 
-    JOIN products p ON oi.product_id = p.id 
-    WHERE oi.order_id = ?
+    SELECT ctdh.SO_LUONG, ctdh.DON_GIA, sp.TEN, sp.ANH_DAI_DIEN 
+    FROM CHI_TIET_DON_HANG ctdh 
+    JOIN SAN_PHAM sp ON ctdh.MA_SP = sp.MA_SP 
+    WHERE ctdh.MA_DH = ?
 ");
 $stmt_items->bind_param("i", $order_id);
 $stmt_items->execute();
@@ -48,18 +48,18 @@ $conn->close();
 
 <div class="row mb-3">
     <div class="col-md-6">
-        <strong>Mã đơn hàng:</strong> #<?php echo $order['id']; ?><br>
-        <strong>Ngày đặt:</strong> <?php echo date('d/m/Y H:i', strtotime($order['order_date'])); ?><br>
-        <strong>Phương thức TT:</strong> <?php echo ($order['payment_method'] == 'cod') ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'; ?>
+        <strong>Mã đơn hàng:</strong> #<?php echo $order['MA_DH']; ?><br>
+        <strong>Ngày đặt:</strong> <?php echo date('d/m/Y H:i', strtotime($order['NGAY_DAT_HANG'])); ?><br>
+        <strong>Phương thức TT:</strong> <?php echo ($order['PHUONG_THUC_THANH_TOAN'] == 'cod') ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'; ?>
     </div>
     <div class="col-md-6">
-        <strong>Khách hàng:</strong> <?php echo htmlspecialchars($order['customer_name']); ?><br>
-        <strong>Điện thoại:</strong> <?php echo htmlspecialchars($order['customer_phone']); ?><br>
-        <strong>Địa chỉ:</strong> <?php echo htmlspecialchars($order['customer_address']); ?>
+        <strong>Khách hàng:</strong> <?php echo htmlspecialchars($order['TEN_KHACH_HANG']); ?><br>
+        <strong>Điện thoại:</strong> <?php echo htmlspecialchars($order['SDT_KHACH_HANG']); ?><br>
+        <strong>Địa chỉ:</strong> <?php echo htmlspecialchars($order['DIA_CHI_GIAO_HANG']); ?>
     </div>
-    <?php if (!empty($order['notes'])): ?>
+    <?php if (!empty($order['GHI_CHU'])): ?>
     <div class="col-12 mt-2">
-        <strong>Ghi chú:</strong> <?php echo htmlspecialchars($order['notes']); ?>
+        <strong>Ghi chú:</strong> <?php echo htmlspecialchars($order['GHI_CHU']); ?>
     </div>
     <?php endif; ?>
 </div>
@@ -69,17 +69,17 @@ $conn->close();
     <?php foreach ($order_items as $item): ?>
     <li class="list-group-item d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
-            <img src="<?php echo htmlspecialchars($item['mainImage']); ?>" width="50" class="me-3 rounded">
+            <img src="<?php echo htmlspecialchars($item['ANH_DAI_DIEN']); ?>" width="50" class="me-3 rounded">
             <div>
-                <p class="mb-0"><?php echo htmlspecialchars($item['name']); ?></p>
-                <small class="text-muted">Số lượng: <?php echo $item['quantity']; ?> x <?php echo number_format($item['price'], 0, ',', '.'); ?>₫</small>
+                <p class="mb-0"><?php echo htmlspecialchars($item['TEN']); ?></p>
+                <small class="text-muted">Số lượng: <?php echo $item['SO_LUONG']; ?> x <?php echo number_format($item['DON_GIA'], 0, ',', '.'); ?>₫</small>
             </div>
         </div>
-        <span class="fw-bold"><?php echo number_format($item['price'] * $item['quantity'], 0, ',', '.'); ?>₫</span>
+        <span class="fw-bold"><?php echo number_format($item['DON_GIA'] * $item['SO_LUONG'], 0, ',', '.'); ?>₫</span>
     </li>
     <?php endforeach; ?>
     <li class="list-group-item d-flex justify-content-between bg-light">
         <strong class="fs-5">Tổng cộng</strong>
-        <strong class="fs-5 text-danger"><?php echo number_format($order['total_amount'], 0, ',', '.'); ?>₫</strong>
+        <strong class="fs-5 text-danger"><?php echo number_format($order['TONG_TIEN'], 0, ',', '.'); ?>₫</strong>
     </li>
 </ul>

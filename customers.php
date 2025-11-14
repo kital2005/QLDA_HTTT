@@ -1,8 +1,7 @@
-<?php
-// Ghi chú: Bắt đầu session và kết nối CSDL
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+<?php // Ghi chú: Bắt đầu session và kết nối CSDL
+// Đảm bảo session đã được bắt đầu trong config.php
+require_once 'config.php';
+
 // Ghi chú: Bảo mật - Chỉ admin mới được truy cập
 if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     // Nếu không phải admin, chuyển hướng về trang chủ
@@ -58,7 +57,7 @@ $search_term = trim($_GET['search'] ?? '');
               <li class="nav-item"><a class="nav-link" href="index.php"><i class="fas fa-home me-1"></i>Xem trang web</a></li>
               <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?> (Admin)
+                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?> (Admin)
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                       <li><a class="dropdown-item" href="admin.php"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Admin Dashboard</a></li>
@@ -123,13 +122,13 @@ $search_term = trim($_GET['search'] ?? '');
             <tbody>
               <?php
                 // Ghi chú: Xây dựng câu truy vấn SQL cơ bản
-                $sql = "SELECT id, name, email, created_at, role FROM users";
+                $sql = "SELECT MA_ND, TEN, EMAIL, NGAY_TAO, VAI_TRO FROM NGUOI_DUNG";
                 $params = [];
                 $types = '';
 
                 // Ghi chú: Thêm điều kiện tìm kiếm nếu có từ khóa
                 if (!empty($search_term)) {
-                    $sql .= " WHERE LOWER(name) LIKE ? OR LOWER(email) LIKE ?";
+                    $sql .= " WHERE LOWER(TEN) LIKE ? OR LOWER(EMAIL) LIKE ?";
                     $search_like = '%' . strtolower($search_term) . '%';
                     $params[] = &$search_like;
                     $params[] = &$search_like;
@@ -137,7 +136,7 @@ $search_term = trim($_GET['search'] ?? '');
                 }
 
                 // Ghi chú: Thêm sắp xếp để 'admin' lên đầu
-                $sql .= " ORDER BY FIELD(role, 'admin', 'user'), id ASC";
+                $sql .= " ORDER BY FIELD(VAI_TRO, 'admin', 'user'), MA_ND ASC";
                 
                 $stmt = $conn->prepare($sql);
                 if (!empty($search_term)) $stmt->bind_param($types, ...$params);
@@ -150,30 +149,30 @@ $search_term = trim($_GET['search'] ?? '');
                     // Ghi chú: Lặp qua từng dòng dữ liệu và hiển thị
                     while($row = $result->fetch_assoc()) {
                         // Ghi chú: Hiển thị tiêu đề cho mỗi nhóm (Admin, User)
-                        if ($row['role'] !== $current_role) {
-                            $current_role = $row['role'];
+                        if ($row['VAI_TRO'] !== $current_role) {
+                            $current_role = $row['VAI_TRO'];
                             $role_name = ($current_role == 'admin') ? 'Quản trị viên' : 'Người dùng';
                             echo '<tr><td colspan="6" class="bg-light fw-bold text-primary">' . $role_name . '</td></tr>';
                         }
 
                         echo "<tr>";
-                        echo "<td>" . htmlspecialchars($row['id']) . "</td>";
-                        echo "<td>" . htmlspecialchars($row['name']) . "</td>";
-                        echo "<td>" . htmlspecialchars($row['email']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['MA_ND']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['TEN']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['EMAIL']) . "</td>";
                         // Ghi chú: Định dạng lại ngày tháng cho dễ đọc
-                        echo "<td>" . date("d-m-Y H:i", strtotime($row['created_at'])) . "</td>";
+                        echo "<td>" . date("d-m-Y H:i", strtotime($row['NGAY_TAO'])) . "</td>";
                         // Ghi chú: Hiển thị vai trò và form để thay đổi vai trò
                         echo '<td>';
                         // Admin không thể tự thay đổi vai trò của chính mình
-                        if ($_SESSION['user_id'] == $row['id']) {
-                            echo '<span class="badge bg-primary">' . htmlspecialchars(ucfirst($row['role'])) . '</span>';
+                        if ($_SESSION['user_ma_nd'] == $row['MA_ND']) {
+                            echo '<span class="badge bg-primary">' . htmlspecialchars(ucfirst($row['VAI_TRO'])) . '</span>';
                         } else {
                             // Form cho phép thay đổi vai trò của người dùng khác
                             echo '<form action="update_role.php" method="POST" class="role-form">';
-                            echo '<input type="hidden" name="user_id" value="' . $row['id'] . '">';
+                            echo '<input type="hidden" name="user_id" value="' . $row['MA_ND'] . '">';
                             echo '<select name="new_role" class="form-select form-select-sm" onchange="this.form.submit()" title="Thay đổi vai trò người dùng">';
-                            echo '<option value="user"' . ($row['role'] == 'user' ? ' selected' : '') . '>User</option>';
-                            echo '<option value="admin"' . ($row['role'] == 'admin' ? ' selected' : '') . '>Admin</option>';
+                            echo '<option value="user"' . ($row['VAI_TRO'] == 'user' ? ' selected' : '') . '>User</option>';
+                            echo '<option value="admin"' . ($row['VAI_TRO'] == 'admin' ? ' selected' : '') . '>Admin</option>';
                             echo '</select>';
                             echo '</form>';
                         }
@@ -183,28 +182,28 @@ $search_term = trim($_GET['search'] ?? '');
                         echo '<button type="button" class="btn btn-sm btn-outline-primary me-2 view-details-btn" 
                                 data-bs-toggle="modal" 
                                 data-bs-target="#customerDetailsModal"
-                                data-id="' . htmlspecialchars($row['id']) . '"
-                                data-name="' . htmlspecialchars($row['name']) . '"
-                                data-email="' . htmlspecialchars($row['email']) . '"
-                                data-created_at="' . date("d-m-Y H:i", strtotime($row['created_at'])) . '">
+                                data-id="' . htmlspecialchars($row['MA_ND']) . '"
+                                data-name="' . htmlspecialchars($row['TEN']) . '"
+                                data-email="' . htmlspecialchars($row['EMAIL']) . '"
+                                data-created_at="' . date("d-m-Y H:i", strtotime($row['NGAY_TAO'])) . '">
                               Chi tiết
                               </button>';
                         // Ghi chú: Nút đổi mật khẩu, kích hoạt modal
                         echo '<button type="button" class="btn btn-sm btn-outline-warning me-2 change-password-btn" 
                                 data-bs-toggle="modal" 
                                 data-bs-target="#changePasswordModal"
-                                data-userid="' . htmlspecialchars($row['id']) . '"
-                                data-username="' . htmlspecialchars($row['name']) . '">
+                                data-userid="' . htmlspecialchars($row['MA_ND']) . '"
+                                data-username="' . htmlspecialchars($row['TEN']) . '">
                               Đổi mật khẩu
                               </button>';
                         
                         // Ghi chú: Nút xóa với hộp thoại xác nhận
                         // Không cho phép xóa tài khoản đang đăng nhập (nếu là admin)
-                        $is_current_user = (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $row['id']);
+                        $is_current_user = (isset($_SESSION['user_ma_nd']) && $_SESSION['user_ma_nd'] == $row['MA_ND']);
                         if ($is_current_user) {
                             echo '<button class="btn btn-sm btn-outline-danger" disabled>Xóa</button>';
                         } else {
-                            echo '<a href="delete_customer.php?id=' . $row['id'] . '" class="btn btn-sm btn-outline-danger" onclick="return confirm(\'Bạn có chắc chắn muốn xóa khách hàng này không?\');">Xóa</a>';
+                            echo '<a href="delete_customer.php?id=' . $row['MA_ND'] . '" class="btn btn-sm btn-outline-danger" onclick="return confirm(\'Bạn có chắc chắn muốn xóa khách hàng này không?\');">Xóa</a>';
                         }
                         echo "</td>";
                         echo "</tr>";

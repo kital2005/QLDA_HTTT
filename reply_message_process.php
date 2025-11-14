@@ -1,6 +1,5 @@
-<?php
-// File: reply_message_process.php
-
+<?php // File: reply_message_process.php
+// Đảm bảo session đã được bắt đầu trong config.php
 require_once 'config.php';
 
 // Ghi chú: Tích hợp PHPMailer
@@ -91,7 +90,7 @@ try {
 
     // --- CẬP NHẬT CSDL ---
     // Nếu gửi email thành công, cập nhật trạng thái tin nhắn thành 'replied'
-    $sql = "UPDATE contact_messages SET status = 'replied' WHERE id = ?";
+    $sql = "UPDATE TIN_NHAN_LIEN_HE SET TRANG_THAI = 'da_tra_loi' WHERE MA_TLH = ?";
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("i", $message_id);
         $stmt->execute();

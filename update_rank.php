@@ -24,24 +24,33 @@ if ($user_id_to_update === false || !in_array($new_rank, $allowed_ranks)) {
 }
 
 // --- XỬ LÝ CẬP NHẬT ---
-$sql = "UPDATE users SET rank = ? WHERE id = ?";
+$sql = "UPDATE NGUOI_DUNG SET HANG_THANH_VIEN = ? WHERE MA_ND = ?";
 $stmt = $conn->prepare($sql);
 
-// Nếu người dùng chọn "Không có hạng", ta sẽ lưu NULL vào CSDL
-$rank_to_save = ($new_rank === 'none') ? null : $new_rank;
+// Kiểm tra xem câu lệnh prepare có thành công không
+if ($stmt === false) {
+    $_SESSION['error'] = "Lỗi khi chuẩn bị câu lệnh SQL: " . $conn->error;
+    header("Location: services.php?tab=ranks");
+    exit();
+}
 
-$stmt->bind_param("si", $rank_to_save, $user_id_to_update);
-
-if ($stmt->execute()) {
+// Xử lý việc binding tham số một cách an toàn, đặc biệt cho giá trị NULL
+if ($new_rank === 'none') {
+    $null_val = null;
+    // Khi hạng là 'none', chúng ta bind giá trị NULL.
+    // Kiểu 's' vẫn hoạt động với bind_param khi truyền biến bằng tham chiếu.
+    $stmt->bind_param("si", $null_val, $user_id_to_update);
+} else {
+    $stmt->bind_param("si", $new_rank, $user_id_to_update);
+}
+ 
+if ($stmt->execute()) { 
     $_SESSION['message'] = "Cập nhật hạng cho khách hàng ID: " . $user_id_to_update . " thành công!";
 } else {
     $_SESSION['error'] = "Lỗi khi cập nhật hạng: " . $conn->error;
 }
 
 $stmt->close();
-$conn->close();
-
-// Chuyển hướng người dùng trở lại tab quản lý hạng
 header("Location: services.php?tab=ranks");
 exit();
 ?>

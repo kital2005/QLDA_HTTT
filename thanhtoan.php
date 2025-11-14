@@ -1,4 +1,4 @@
-<?php
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 require_once 'config.php';
 
 // Ghi chú: Bảo vệ trang thanh toán. Chỉ người dùng đã đăng nhập mới có thể truy cập.
@@ -8,37 +8,40 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit;
 }
 
-// Giả sử giỏ hàng được lưu trong session, ví dụ: $_SESSION['cart'] = [product_id => quantity, ...];
-// Để test, bạn có thể giả lập dữ liệu giỏ hàng nếu session trống
-if (empty($_SESSION['cart'])) {
-    // Dữ liệu giả lập để test giao diện. Bật dòng dưới đây lên nếu bạn muốn test mà không cần thêm sản phẩm vào giỏ hàng thật.
-    // $_SESSION['cart'] = [1 => 1, 2 => 2]; 
-    
-    // Trong thực tế, nếu giỏ hàng trống, nên chuyển hướng về trang giỏ hàng
-    $_SESSION['message'] = "Giỏ hàng của bạn đang trống. Vui lòng thêm sản phẩm trước khi thanh toán.";
+// Ưu tiên giỏ hàng "Mua ngay", nếu không có thì dùng giỏ hàng chính
+$cart_to_process = $_SESSION['buy_now_cart'] ?? $_SESSION['cart'] ?? [];
+
+// Nếu không có giỏ hàng nào (cả mua ngay và giỏ hàng chính), chuyển hướng
+if (empty($cart_to_process)) {
+    // Nếu đang trong luồng "Mua ngay" mà giỏ hàng trống -> lỗi, về trang chủ
+    if (isset($_SESSION['buy_now_cart'])) {
+        unset($_SESSION['buy_now_cart']);
+        header("Location: index.php");
+        exit;
+    }
+    $_SESSION['message'] = "Giỏ hàng của bạn đang trống.";
     $_SESSION['message_type'] = "warning"; // Sửa lỗi: message_type phải là chuỗi
     header("Location: cart.php");
     exit;
 }
 
-// Lấy thông tin người dùng nếu đã đăng nhập
+// Lấy thông tin người dùng và địa chỉ mặc định
 $user_name = '';
 $user_email = '';
-$user_phone = '09xxxxxxxx'; // Dữ liệu mẫu
-$user_address = 'Xuân Khánh, Ninh Kiều, Cần Thơ'; // Dữ liệu mẫu
+$user_phone = '';
+$user_address = '';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-    $user_id = $_SESSION['user_id'];
-    // Giả sử bạn đã có cột phone và address trong bảng users
-    $stmt = $conn->prepare("SELECT name, email FROM users WHERE id = ?");
+    $user_id = $_SESSION['user_ma_nd'];
+    // Giả sử bạn có thể lấy thông tin từ bảng users
+    $stmt = $conn->prepare("SELECT TEN, EMAIL FROM NGUOI_DUNG WHERE MA_ND = ?");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($user = $result->fetch_assoc()) {
-        $user_name = $user['name'];
-        $user_email = $user['email'];
-        // $user_phone = $user['phone'] ?? '09xxxxxxxx'; // Bật lên khi có dữ liệu thật
-        // $user_address = $user['address'] ?? 'Xuân Khánh, Ninh Kiều, Cần Thơ'; // Bật lên khi có dữ liệu thật
+        $user_name = $user['TEN'];
+        $user_email = $user['EMAIL'];
+        // Bạn có thể thêm cột phone và address vào bảng users để lấy ở đây
     }
     $stmt->close();
 }
@@ -46,21 +49,21 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 // Lấy thông tin chi tiết các sản phẩm trong giỏ hàng
 $cart_products = [];
 $total_price = 0;
-$product_ids = array_keys($_SESSION['cart']);
+$product_ids = array_keys($cart_to_process);
 if (!empty($product_ids)) {
     $ids_placeholder = implode(',', array_fill(0, count($product_ids), '?'));
     $types = str_repeat('i', count($product_ids));
     
-    $sql = "SELECT id, name, price, mainImage FROM products WHERE id IN ($ids_placeholder)";
+    $sql = "SELECT MA_SP, TEN, GIA_BAN, ANH_DAI_DIEN FROM SAN_PHAM WHERE MA_SP IN ($ids_placeholder)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$product_ids);
     $stmt->execute();
     $result = $stmt->get_result();
     
     while ($product = $result->fetch_assoc()) {
-        $quantity = $_SESSION['cart'][$product['id']];
+        $quantity = $cart_to_process[$product['MA_SP']];
         $product['quantity'] = $quantity;
-        $subtotal = $product['price'] * $quantity;
+        $subtotal = $product['GIA_BAN'] * $quantity;
         $total_price += $subtotal;
         $cart_products[] = $product;
     }
@@ -89,15 +92,14 @@ if (!empty($product_ids)) {
             $accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
             $phone_categories_nav = [];
             $accessory_categories_nav = [];
-            $sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+            $sql_nav_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
             $result_nav_categories = $conn->query($sql_nav_categories);
             if ($result_nav_categories) {
                 while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
-                    if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+                    if (in_array($row_nav_cat['MA_DM'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
                     else $phone_categories_nav[] = $row_nav_cat;
                 }
             }
-            $conn->close();
           ?>
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
@@ -108,13 +110,13 @@ if (!empty($product_ids)) {
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <li><h6 class="dropdown-header">Điện thoại</h6></li>
                   <?php foreach ($phone_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
                   <li><hr class="dropdown-divider" /></li>
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
                   <li><hr class="dropdown-divider" /></li>
@@ -124,7 +126,7 @@ if (!empty($product_ids)) {
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
                   </li>
               <?php else: ?>
@@ -149,12 +151,23 @@ if (!empty($product_ids)) {
                     <h5 class="mb-0">Địa Chỉ Nhận Hàng</h5>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong class="me-2"><?php echo htmlspecialchars($user_name); ?></strong>
-                        <strong class="me-2"><?php echo htmlspecialchars($user_phone); ?></strong>
-                        <span><?php echo htmlspecialchars($user_address); ?></span>
+                    <!-- Hoàn nguyên về form nhập liệu thủ công -->
+                    <div class="w-100">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="checkout-name" class="form-label">Họ và tên người nhận</label>
+                                <input type="text" class="form-control" id="checkout-name" name="name" value="<?php echo htmlspecialchars($user_name); ?>" required form="checkoutForm">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="checkout-phone" class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" id="checkout-phone" name="phone" value="<?php echo htmlspecialchars($user_phone); ?>" required form="checkoutForm">
+                            </div>
+                            <div class="col-12">
+                                <label for="checkout-address" class="form-label">Địa chỉ chi tiết</label>
+                                <input type="text" class="form-control" id="checkout-address" name="address" value="<?php echo htmlspecialchars($user_address); ?>" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" required form="checkoutForm">
+                            </div>
+                        </div>
                     </div>
-                    <a href="#" class="btn btn-sm btn-outline-secondary">Thay đổi</a>
                 </div>
             </div>
 
@@ -169,15 +182,15 @@ if (!empty($product_ids)) {
                         <?php foreach ($cart_products as $item): ?>
                         <tr>
                             <td style="width: 80px;">
-                                <img src="<?php echo htmlspecialchars($item['mainImage']); ?>" class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['name']); ?>">
+                                <img src="<?php echo htmlspecialchars($item['ANH_DAI_DIEN']); ?>" class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['TEN']); ?>">
                             </td>
                             <td>
-                                <p class="mb-0"><?php echo htmlspecialchars($item['name']); ?></p>
+                                <p class="mb-0"><?php echo htmlspecialchars($item['TEN']); ?></p>
                                 <small class="text-muted">Phân loại: Titan tự nhiên, 256GB</small> <!-- Dữ liệu mẫu -->
                             </td>
                             <td class="text-center">
                                 <small>Đơn giá:</small>
-                                <p class="mb-0"><?php echo number_format($item['price'], 0, ',', '.'); ?>₫</p>
+                                <p class="mb-0"><?php echo number_format($item['GIA_BAN'], 0, ',', '.'); ?>₫</p>
                             </td>
                             <td class="text-center">
                                 <small>Số lượng:</small>
@@ -185,7 +198,7 @@ if (!empty($product_ids)) {
                             </td>
                             <td class="text-end">
                                 <small>Thành tiền:</small>
-                                <p class="mb-0 text-danger"><?php echo number_format($item['price'] * $item['quantity'], 0, ',', '.'); ?>₫</p>
+                                <p class="mb-0 text-danger"><?php echo number_format($item['GIA_BAN'] * $item['quantity'], 0, ',', '.'); ?>₫</p>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -253,12 +266,9 @@ if (!empty($product_ids)) {
             <div class="me-3 text-end">
                 <small class="d-block text-muted"><i class="fas fa-info-circle me-1"></i>Nhấn "Đặt hàng" đồng nghĩa bạn đồng ý tuân theo <a href="terms_of_service.php" target="_blank">Điều khoản của TechPhone</a></small>
             </div>
-            <form action="process_checkout.php" method="POST">
+            <form id="checkoutForm" action="process_checkout.php" method="POST">
                 <!-- Các input ẩn chứa thông tin cần thiết -->
-                <input type="hidden" name="name" value="<?php echo htmlspecialchars($user_name); ?>">
-                <input type="hidden" name="email" value="<?php echo htmlspecialchars($user_email); ?>">
-                <input type="hidden" name="phone" value="<?php echo htmlspecialchars($user_phone); ?>">
-                <input type="hidden" name="address" value="<?php echo htmlspecialchars($user_address); ?>">
+                <input type="hidden" name="email" value="<?php echo htmlspecialchars($user_email ?? ''); ?>">
                 <input type="hidden" name="payment_method" value="cod"> <!-- Giá trị mặc định -->
                 <button class="btn btn-primary btn-lg" style="min-width: 200px;" type="submit">Đặt Hàng</button>
             </form>

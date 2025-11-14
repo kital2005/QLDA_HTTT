@@ -1,5 +1,4 @@
-<?php
-session_start();
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">

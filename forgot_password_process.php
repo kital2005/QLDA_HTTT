@@ -1,5 +1,4 @@
-<?php
-session_start();
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 require_once "config.php";
 
 // Ghi chú: Tích hợp PHPMailer
@@ -17,7 +16,7 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // 1. Kiểm tra xem email có tồn tại trong CSDL không
-$sql = "SELECT id FROM users WHERE email = ?";
+$sql = "SELECT MA_ND FROM NGUOI_DUNG WHERE EMAIL = ?";
 if ($stmt = $conn->prepare($sql)) {
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -28,7 +27,7 @@ if ($stmt = $conn->prepare($sql)) {
         $token = bin2hex(random_bytes(50));
 
         // 3. Lưu token vào CSDL và đặt thời gian hết hạn là 1 giờ kể từ bây giờ (sử dụng hàm của MySQL)
-        $update_sql = "UPDATE users SET reset_token = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE email = ?";
+        $update_sql = "UPDATE NGUOI_DUNG SET MA_KHOI_PHUC = ?, MA_KHOI_PHUC_HET_HAN = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE EMAIL = ?";
         if ($update_stmt = $conn->prepare($update_sql)) {
             $update_stmt->bind_param("ss", $token, $email);
             $update_stmt->execute();

@@ -18,7 +18,7 @@ if ($password !== $confirmPassword) {
 }
 
 // Kiểm tra email đã tồn tại chưa
-$sql = "SELECT id FROM users WHERE email = ?";
+$sql = "SELECT MA_ND FROM NGUOI_DUNG WHERE EMAIL = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $email);
 $stmt->execute();
@@ -36,7 +36,7 @@ $stmt->close();
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
 // Chèn người dùng mới vào CSDL
-$sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+$sql = "INSERT INTO NGUOI_DUNG (TEN, EMAIL, MAT_KHAU) VALUES (?, ?, ?)";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("sss", $name, $email, $hashed_password);
 

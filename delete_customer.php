@@ -1,9 +1,6 @@
-<?php
-// Ghi chú: File này xử lý logic xóa một khách hàng khỏi cơ sở dữ liệu.
+<?php // Ghi chú: File này xử lý logic xóa một khách hàng khỏi cơ sở dữ liệu.
+// Đảm bảo session đã được bắt đầu trong config.php
 
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
 require_once 'config.php';
 
 // --- BẢO MẬT ---
@@ -26,7 +23,7 @@ if ($id_to_delete === false || $id_to_delete === null) {
 
 // --- XỬ LÝ XÓA ---
 // Ghi chú: Sử dụng prepared statement để tránh lỗi SQL Injection.
-$sql = "DELETE FROM users WHERE id = ?";
+$sql = "DELETE FROM NGUOI_DUNG WHERE MA_ND = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $id_to_delete);
 

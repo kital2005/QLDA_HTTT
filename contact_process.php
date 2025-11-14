@@ -22,10 +22,10 @@ if (empty($name) || empty($email) || empty($message) || !filter_var($email, FILT
 
 // --- XỬ LÝ DỮ LIỆU ---
 // Kiểm tra xem người dùng có đang đăng nhập không
-$user_id = $_SESSION['user_id'] ?? null;
+$user_id = $_SESSION['user_ma_nd'] ?? null;
 
 // Chèn tin nhắn vào CSDL bằng prepared statement để bảo mật
-$sql = "INSERT INTO contact_messages (user_id, name, email, message) VALUES (?, ?, ?, ?)";
+$sql = "INSERT INTO TIN_NHAN_LIEN_HE (MA_ND, TEN_NGUOI_GUI, EMAIL_NGUOI_GUI, NOI_DUNG_TIN_NHAN) VALUES (?, ?, ?, ?)";
 
 if ($stmt = $conn->prepare($sql)) {
     // Ghi chú: 'isss' tương ứng với kiểu dữ liệu của các biến: integer, string, string, string

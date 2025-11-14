@@ -1,6 +1,5 @@
-<?php
-// BẮT ĐẦU KHỐI CODE PHP LẤY DỮ LIỆU SẢN PHẨM
-include 'config.php'; // Đảm bảo file kết nối CSDL tồn tại và bắt đầu session
+<?php // BẮT ĐẦU KHỐI CODE PHP LẤY DỮ LIỆU SẢN PHẨM
+include 'config.php'; // Đảm bảo file kết nối CSDL tồn tại và session đã được bắt đầu
 
 // 1. Lấy ID sản phẩm từ URL (chitietsanpham.php?id=X)
 $product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -9,7 +8,7 @@ $reviews = [];
 
 if ($product_id > 0) {
     // 2. Chuẩn bị truy vấn CSDL an toàn (Prepared Statement)
-    $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt = $conn->prepare("SELECT * FROM SAN_PHAM WHERE MA_SP = ?");
     $stmt->bind_param("i", $product_id); // "i" là kiểu integer
     $stmt->execute();
     $result = $stmt->get_result();
@@ -19,23 +18,30 @@ if ($product_id > 0) {
         $product = $result->fetch_assoc();
         
         // Định dạng giá tiền để sử dụng trong HTML
-        $price_formatted = number_format($product["price"], 0, ',', '.') . '₫';
-        $original_price_formatted = number_format($product["originalPrice"], 0, ',', '.') . '₫';
-        $stars = round($product["rating"]);
+        $price_formatted = number_format($product["GIA_BAN"], 0, ',', '.') . '₫';
+        $original_price_formatted = number_format($product["GIA_GOC"], 0, ',', '.') . '₫';
+        $stars = round($product["XEP_HANG"]);
     }
     
     $stmt->close();
 
     // Ghi chú: Lấy tất cả các đánh giá cho sản phẩm này
     $stmt_reviews = $conn->prepare("
-        SELECT r.*, u.name as user_name 
-        FROM reviews r 
-        JOIN users u ON r.user_id = u.id 
-        WHERE r.product_id = ? ORDER BY r.created_at DESC");
+        SELECT r.*, u.TEN as user_name 
+        FROM DANH_GIA r
+        JOIN NGUOI_DUNG u ON r.MA_ND = u.MA_ND
+        WHERE r.MA_SP = ? ORDER BY r.NGAY_TAO DESC
+    ");
     $stmt_reviews->bind_param("i", $product_id);
     $stmt_reviews->execute();
-    $reviews = $stmt_reviews->get_result()->fetch_all(MYSQLI_ASSOC);
-} 
+    $reviews_result = $stmt_reviews->get_result();
+    while ($review = $reviews_result->fetch_assoc()) {
+        $reviews[$review['MA_DG']] = $review;
+        $reviews[$review['MA_DG']]['replies'] = []; // Khởi tạo mảng replies
+    }
+    $stmt_reviews->close();
+}
+
 // Xử lý trường hợp không tìm thấy sản phẩm
 if (!$product) {
     // Tùy chọn: có thể chuyển hướng người dùng về trang danh sách
@@ -43,21 +49,43 @@ if (!$product) {
     // exit();
 }
 
+// Lấy tất cả các câu trả lời cho các đánh giá của sản phẩm này
+if (!empty($reviews)) {
+    $review_ids = array_keys($reviews);
+    $ids_placeholder = implode(',', array_fill(0, count($review_ids), '?'));
+    $types = str_repeat('i', count($review_ids));
+
+    $stmt_replies = $conn->prepare("
+        SELECT rr.*, u.TEN as user_name, u.VAI_TRO as user_role
+        FROM PHAN_HOI_DANH_GIA rr
+        JOIN NGUOI_DUNG u ON rr.MA_ND = u.MA_ND
+        WHERE rr.MA_DG IN ($ids_placeholder) ORDER BY rr.NGAY_TAO ASC
+    ");
+    $stmt_replies->bind_param($types, ...$review_ids);
+    $stmt_replies->execute();
+    $replies_result = $stmt_replies->get_result();
+    while ($reply = $replies_result->fetch_assoc()) {
+        // Gán câu trả lời vào đúng đánh giá của nó
+        if (isset($reviews[$reply['MA_DG']])) {
+            $reviews[$reply['MA_DG']]['replies'][] = $reply;
+        }
+    }
+    $stmt_replies->close();
+}
+
 // Lấy tất cả danh mục để hiển thị trong navigation
 $phone_categories_nav = [];
 $accessory_categories_nav = [];
 $accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
 
-$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$sql_nav_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
 $result_nav_categories = $conn->query($sql_nav_categories);
 if ($result_nav_categories) {
     while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
-        if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+        if (in_array($row_nav_cat['MA_DM'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
         else $phone_categories_nav[] = $row_nav_cat;
     }
 }
-
-$conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu cần thiết
 
 // KẾT THÚC KHỐI CODE PHP LẤY DỮ LIỆU SẢN PHẨM
 ?>
@@ -80,7 +108,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
     </style>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><?php echo $product ? htmlspecialchars($product["name"]) : 'Sản phẩm không tồn tại'; ?> - Chi tiết Sản phẩm</title>
+    <title><?php echo $product ? htmlspecialchars($product["TEN"]) : 'Sản phẩm không tồn tại'; ?> - Chi tiết Sản phẩm</title>
     <link rel="icon" href="images/logo-web.svg" type="image/svg+xml">
     
     <link
@@ -97,6 +125,16 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
       </head>
   <body>
     <header class="sticky-top">
+      <!-- GHI CHÚ: Thêm Toast Container để hiển thị thông báo -->
+      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toast-title">Thông báo</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-body"></div>
+        </div>
+      </div>
       <nav class="navbar navbar-expand-lg">
         <div class="container">
           <a href="index.php"><img src="./images/logo-web.png" alt="Tech Phone Logo" class="logo-web"> <img src="./images/name-website.png" alt="Tech Phone" class="logo-web"></a>
@@ -117,7 +155,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <li><h6 class="dropdown-header">Điện thoại</h6></li>
                   <?php foreach ($phone_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
                   
@@ -125,7 +163,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -142,7 +180,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
                       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                           <li><a class="dropdown-item" href="account.php">Tài khoản của tôi</a></li>
@@ -160,7 +198,14 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
             </ul>
             <div class="ms-3 d-flex align-items-center">
               <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="fas fa-moon"></i></button>
-              <a href="cart.php" class="btn btn-primary ms-2 position-relative"><i class="fas fa-shopping-cart"></i></a>
+              <a href="cart.php" class="btn btn-primary ms-2 position-relative" aria-label="Giỏ hàng"><i class="fas fa-shopping-cart"></i>
+                <?php 
+                  $cart_count = isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0;
+                  if ($cart_count > 0) {
+                      echo '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">' . $cart_count . '</span>';
+                  }
+                ?>
+              </a>
             </div>
           </div>
         </div>
@@ -175,7 +220,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
           <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="index.php">Trang chủ</a></li>
             <li class="breadcrumb-item"><a href="sanpham.php">Sản phẩm</a></li>
-            <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($product["name"]); ?></li>
+            <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($product["TEN"]); ?></li>
           </ol>
         </nav>
 
@@ -183,9 +228,9 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
           <div class="col-lg-6 mb-4 mb-lg-0">
             <div class="main-image mb-3 border rounded-3 p-3 text-center">
               <img
-                src="<?php echo htmlspecialchars($product["mainImage"]); ?>"
+                src="<?php echo htmlspecialchars($product["ANH_DAI_DIEN"]); ?>"
                 class="img-fluid rounded-3"
-                alt="<?php echo htmlspecialchars($product["name"]); ?>"
+                alt="<?php echo htmlspecialchars($product["TEN"]); ?>"
                 id="mainProductImage"
               />
             </div>
@@ -193,12 +238,12 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
             <div class="thumbnail-images d-flex justify-content-center flex-wrap">
               <?php
                 // Hiển thị ảnh chính làm thumbnail đầu tiên
-                echo '<img src="'.htmlspecialchars($product["mainImage"]).'" class="img-thumbnail me-2 active" alt="Thumbnail 1" width="80" onclick="changeMainImage(this)">';
+                echo '<img src="'.htmlspecialchars($product["ANH_DAI_DIEN"]).'" class="img-thumbnail me-2 active" alt="Thumbnail 1" width="80" onclick="changeMainImage(this)">';
                 
                 // Hiển thị các ảnh phụ (nếu có)
-                if (!empty($product['images'])) {
+                if (!empty($product['DANH_SACH_ANH'])) {
                     try {
-                        $other_images = json_decode($product['images'], true);
+                        $other_images = json_decode($product['DANH_SACH_ANH'], true);
                         if (is_array($other_images)) {
                             foreach ($other_images as $index => $img_path) {
                                 echo '<img src="'.htmlspecialchars($img_path).'" class="img-thumbnail me-2" alt="Thumbnail '.($index+2).'" width="80" onclick="changeMainImage(this)">';
@@ -212,7 +257,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
 
           <div class="col-lg-6">
             <h1 class="display-5 fw-bold mb-3">
-              <?php echo htmlspecialchars($product["name"]); ?>
+              <?php echo htmlspecialchars($product["TEN"]); ?>
             </h1>
 
             <div class="d-flex align-items-center mb-3">
@@ -225,7 +270,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                 ?>
               </div>
               <span class="text-muted small border-start ps-3"
-                ><?php echo htmlspecialchars($product["reviews"]); ?> đánh giá</span
+                ><?php echo htmlspecialchars($product["SO_DANH_GIA"]); ?> đánh giá</span
               >
             </div>
 
@@ -237,16 +282,27 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                 <?php echo $original_price_formatted; ?>
               </span>
             </div>
+            
+            <!-- Thêm trạng thái tồn kho -->
+            <div class="stock-status mb-4">
+                <span class="fw-bold">Tình trạng:</span>
+                <?php if ($product['TON_KHO'] > 0): ?>
+                    <span class="badge bg-success">Còn hàng</span>
+                <?php else: ?>
+                    <span class="badge bg-danger">Hết hàng</span>
+                <?php endif; ?>
+            </div>
+
 
             <p class="mb-4 lead text-muted">
-              <?php echo htmlspecialchars($product["description"]); ?>
+              <?php echo htmlspecialchars($product["MO_TA"]); ?>
             </p>
             
             <?php
                 // Hiển thị các phiên bản sản phẩm (nếu có)
-                if (!empty($product['variants'])) {
+                if (!empty($product['BIEN_THE'])) {
                     try {
-                        $variants = json_decode($product['variants'], true);
+                        $variants = json_decode($product['BIEN_THE'], true);
                         if (is_array($variants) && !empty($variants)) {
                             // Lấy ra các màu sắc và dung lượng duy nhất
                             $colors = array_unique(array_column($variants, 'color'));
@@ -299,14 +355,14 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
 
             <form action="cart_actions.php" method="POST">
                 <input type="hidden" name="action" value="add">
-                <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                <input type="hidden" name="product_id" value="<?php echo $product['MA_SP']; ?>">
                 <!-- Gửi số lượng đã chọn -->
                 <input type="hidden" name="quantity" id="form_quantity" value="1"> 
                 <div class="d-grid gap-2 d-md-block">
-                    <button class="btn btn-primary btn-lg me-md-2" type="submit">
+                    <button class="btn btn-primary btn-lg me-md-2" type="submit" <?php if ($product['TON_KHO'] <= 0) echo 'disabled'; ?>>
                         <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ hàng
                     </button>
-                    <button class="btn btn-danger btn-lg" type="submit" name="buy_now" value="1">Mua ngay</button>
+                    <button class="btn btn-danger btn-lg" type="submit" name="buy_now" value="1" <?php if ($product['TON_KHO'] <= 0) echo 'disabled'; ?>>Mua ngay</button>
                 </div>
             </form>
           </div>
@@ -353,7 +409,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                 aria-controls="reviews"
                 aria-selected="false"
               >
-                Đánh giá (<?php echo htmlspecialchars($product["reviews"]); ?>)
+                Đánh giá (<?php echo htmlspecialchars($product["SO_DANH_GIA"]); ?>)
               </button>
             </li>
           </ul>
@@ -362,9 +418,9 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
               <?php 
                 // Giải mã JSON từ cột details
                 $details_html = '';
-                if ($product && !empty($product['details'])) {
+                if ($product && !empty($product['CHI_TIET_KY_THUAT'])) {
                     try {
-                        $details_data = json_decode($product['details'], true);
+                        $details_data = json_decode($product['CHI_TIET_KY_THUAT'], true);
                         if (json_last_error() === JSON_ERROR_NONE && is_array($details_data)) {
                             foreach ($details_data as $groupName => $specs) {
                                 $details_html .= '<h5 class="mt-4 fw-bold">' . htmlspecialchars($groupName) . '</h5>';
@@ -379,10 +435,10 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                             }
                         } else {
                            // Nếu không phải JSON, hiển thị như văn bản thường
-                           $details_html = nl2br(htmlspecialchars($product["details"]));
+                           $details_html = nl2br(htmlspecialchars($product["CHI_TIET_KY_THUAT"]));
                         }
                     } catch (Exception $e) {
-                        $details_html = nl2br(htmlspecialchars($product["details"]));
+                        $details_html = nl2br(htmlspecialchars($product["CHI_TIET_KY_THUAT"]));
                     }
                 } else {
                     $details_html = '<p>Không có chi tiết sản phẩm.</p>';
@@ -392,8 +448,8 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
             </div>
             
             <div class="tab-pane fade" id="specs" role="tabpanel" aria-labelledby="info-tab">
-              <?php if ($product && !empty($product['article_content'])): ?>
-                  <?php echo $product['article_content']; // In trực tiếp HTML đã lưu ?>
+              <?php if ($product && !empty($product['NOI_DUNG_BAI_VIET'])): ?>
+                  <?php echo $product['NOI_DUNG_BAI_VIET']; // In trực tiếp HTML đã lưu ?>
               <?php else: ?>
                   <p>Chưa có bài viết giới thiệu cho sản phẩm này.</p>
               <?php endif; ?>
@@ -437,15 +493,51 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
               <div id="reviews-list">
                 <?php if (!empty($reviews)): ?>
                   <?php foreach ($reviews as $review): ?>
-                  <div class="review-item border-bottom pb-3 mb-3">
+                  <div class="review-item border-bottom pb-3 mb-3" id="review-<?php echo $review['MA_DG']; ?>">
                       <p class="fw-bold mb-1"><?php echo htmlspecialchars($review['user_name']); ?></p>
                       <div class="d-flex align-items-center mb-1">
                           <div class="rating text-warning me-2">
-                              <?php for ($i = 0; $i < 5; $i++) { echo $i < $review['rating'] ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; } ?>
+                              <?php for ($i = 0; $i < 5; $i++) { echo $i < $review['DIEM_XEP_HANG'] ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; } ?>
                           </div>
-                          <small class="text-muted"><?php echo date('d/m/Y', strtotime($review['created_at'])); ?></small>
+                          <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($review['NGAY_TAO'])); ?></small>
                       </div>
-                      <p class="mb-0"><?php echo nl2br(htmlspecialchars($review['comment'])); ?></p>
+                      <p class="mb-0"><?php echo nl2br(htmlspecialchars($review['BINH_LUAN'])); ?></p>
+                      
+                      <!-- Hiển thị các câu trả lời -->
+                      <?php if (!empty($review['replies'])): ?>
+                          <div class="replies-container mt-3 ps-4 border-start">
+                              <?php foreach ($review['replies'] as $reply): ?>
+                                  <div class="reply-item mb-2">
+                                      <p class="fw-bold mb-0">
+                                          <?php echo htmlspecialchars($reply['user_name']); ?>
+                                          <?php if ($reply['user_role'] === 'admin'): ?>
+                                              <span class="badge bg-primary ms-1"><i class="fas fa-check-circle me-1"></i> Quản trị viên</span>
+                                          <?php endif; ?>
+                                      </p>
+                                      <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($reply['NGAY_TAO'])); ?></small>
+                                      <p class="mb-0"><?php echo nl2br(htmlspecialchars($reply['NOI_DUNG_PHAN_HOI'])); ?></p>
+                                  </div>
+                              <?php endforeach; ?>
+                          </div>
+                      <?php endif; ?>
+
+                      <!-- Form trả lời và nút xóa cho Admin -->
+                      <div class="review-actions mt-2">
+                          <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
+                              <a href="#" class="small text-decoration-none reply-btn" data-review-id="<?php echo $review['MA_DG']; ?>">Trả lời</a>
+                          <?php endif; ?>
+
+                          <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                              <a href="review_actions.php?action=delete&id=<?php echo $review['MA_DG']; ?>&product_id=<?php echo $product_id; ?>" 
+                                 class="small text-danger text-decoration-none ms-3" 
+                                 onclick="return confirm('Bạn có chắc chắn muốn xóa đánh giá này không?');">
+                                 Xóa
+                              </a>
+                          <?php endif; ?>
+                      </div>
+                      <div class="reply-form-container mt-2" id="reply-form-<?php echo $review['MA_DG']; ?>" style="display: none;">
+                          <!-- Form trả lời sẽ được chèn vào đây bằng JS -->
+                      </div>
                   </div>
                   <?php endforeach; ?>
                 <?php else: ?>
@@ -514,6 +606,23 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/script.js"></script> 
+    <?php
+      // GHI CHÚ: Script để hiển thị Toast nếu có session message
+      if (isset($_SESSION['message']) && isset($_SESSION['message_type'])) {
+          $toast_title = ($_SESSION['message_type'] == 'success') ? 'Thành công!' : 'Thông báo';
+          echo "<script>
+              document.addEventListener('DOMContentLoaded', function() {
+                  var toastEl = document.getElementById('liveToast');
+                  document.getElementById('toast-title').innerText = '{$toast_title}';
+                  document.getElementById('toast-body').innerText = '{$_SESSION['message']}';
+                  var toast = new bootstrap.Toast(toastEl);
+                  toast.show();
+              });
+          </script>";
+          unset($_SESSION['message']);
+          unset($_SESSION['message_type']);
+      }
+    ?>
     <script>
         // Hàm thay đổi ảnh chính khi click vào thumbnail
         function changeMainImage(thumbnailElement) {
@@ -527,7 +636,7 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
 
         // Logic xử lý chọn phiên bản sản phẩm
         document.addEventListener('DOMContentLoaded', function() {
-            const variantsData = <?php echo $product['variants'] ?? '[]'; ?>;
+            const variantsData = <?php echo $product['BIEN_THE'] ?? '[]'; ?>;
             if (variantsData.length > 0) {
                 const variantButtons = document.querySelectorAll('.variant-btn');
                 let selectedColor = null;
@@ -575,8 +684,25 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
     </script>
     <script>
         // Cập nhật số lượng ẩn trong form khi người dùng thay đổi
-        document.getElementById('quantity').addEventListener('change', function() {
-            document.getElementById('form_quantity').value = this.value;
+        const quantityInput = document.getElementById('quantity');
+        const formQuantityInput = document.getElementById('form_quantity');
+        const plusButton = document.getElementById('button-plus');
+        const minusButton = document.getElementById('button-minus');
+
+        function updateFormQuantity() {
+            formQuantityInput.value = quantityInput.value;
+        }
+
+        // Cập nhật khi người dùng gõ trực tiếp
+        quantityInput.addEventListener('input', updateFormQuantity);
+
+        // Cập nhật khi bấm nút +
+        plusButton.addEventListener('click', function() {
+            setTimeout(updateFormQuantity, 0); // Dùng setTimeout để đảm bảo giá trị đã được cập nhật bởi script.js (nếu có)
+        });
+        // Cập nhật khi bấm nút -
+        minusButton.addEventListener('click', function() {
+            setTimeout(updateFormQuantity, 0); // Dùng setTimeout để đảm bảo giá trị đã được cập nhật bởi script.js (nếu có)
         });
     </script>
     <script>
@@ -681,6 +807,40 @@ $conn->close(); // Đóng kết nối CSDL sau khi đã lấy hết dữ liệu 
                         submitBtn.textContent = originalText;
                     });
                 });
+            }
+        });
+
+        // AJAX xử lý trả lời đánh giá
+        document.addEventListener('click', function(e) {
+            // Mở form trả lời
+            if (e.target.classList.contains('reply-btn')) {
+                e.preventDefault();
+                const reviewId = e.target.dataset.reviewId;
+                const container = document.getElementById(`reply-form-${reviewId}`);
+                
+                // Đóng các form khác nếu đang mở
+                document.querySelectorAll('.reply-form-container').forEach(c => {
+                    if (c.id !== container.id) c.innerHTML = '';
+                });
+
+                if (container.innerHTML === '') {
+                    container.innerHTML = `
+                        <form action="review_actions.php" method="POST" class="reply-form">
+                            <input type="hidden" name="action" value="reply">
+                            <input type="hidden" name="review_id" value="${reviewId}">
+                            <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
+                            <div class="input-group">
+                                <input type="text" name="reply_text" class="form-control form-control-sm" placeholder="Viết câu trả lời..." required>
+                                <button type="submit" class="btn btn-sm btn-primary">Gửi</button>
+                            </div>
+                        </form>
+                    `;
+                    container.style.display = 'block';
+                    container.querySelector('input[name="reply_text"]').focus();
+                } else {
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+                }
             }
         });
     </script>

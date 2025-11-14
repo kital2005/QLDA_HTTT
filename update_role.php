@@ -26,14 +26,14 @@ if ($user_id_to_update === false || ($new_role !== 'user' && $new_role !== 'admi
 }
 
 // Ghi chú: Admin không thể tự thay đổi vai trò của chính mình
-if ($user_id_to_update == $_SESSION['user_id']) {
+if ($user_id_to_update == $_SESSION['user_ma_nd']) {
     $_SESSION['error'] = "Bạn không thể thay đổi vai trò của chính mình.";
     header("Location: customers.php");
     exit();
 }
 
 // --- XỬ LÝ CẬP NHẬT ---
-$sql = "UPDATE users SET role = ? WHERE id = ?";
+$sql = "UPDATE NGUOI_DUNG SET VAI_TRO = ? WHERE MA_ND = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("si", $new_role, $user_id_to_update);
 

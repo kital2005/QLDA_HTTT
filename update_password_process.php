@@ -1,6 +1,4 @@
-<?php
-session_start();
-
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("location: login.php");
@@ -13,7 +11,7 @@ require_once "config.php";
 $current_password = $_POST['current_password'] ?? '';
 $new_password = $_POST['new_password'] ?? '';
 $confirm_new_password = $_POST['confirm_new_password'] ?? '';
-$user_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_ma_nd'];
 
 // --- VALIDATION ---
 // 1. Kiểm tra mật khẩu mới có khớp không
@@ -31,7 +29,7 @@ if (strlen($new_password) < 6) {
 }
 
 // 3. Kiểm tra mật khẩu hiện tại có đúng không
-$sql = "SELECT password FROM users WHERE id = ?";
+$sql = "SELECT MAT_KHAU FROM NGUOI_DUNG WHERE MA_ND = ?";
 if ($stmt = $conn->prepare($sql)) {
     $stmt->bind_param("i", $user_id);
     if ($stmt->execute()) {
@@ -54,7 +52,7 @@ if ($stmt = $conn->prepare($sql)) {
 // --- CẬP NHẬT MẬT KHẨU MỚI ---
 // Mã hóa mật khẩu mới trước khi lưu
 $new_hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-$sql = "UPDATE users SET password = ? WHERE id = ?";
+$sql = "UPDATE NGUOI_DUNG SET MAT_KHAU = ? WHERE MA_ND = ?";
 
 if ($stmt = $conn->prepare($sql)) {
     $stmt->bind_param("si", $new_hashed_password, $user_id);

@@ -1,15 +1,14 @@
-<?php
-session_start();
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 require_once "config.php";
 
-$token = $_GET['token'] ?? '';
+$token = $_GET['token'] ?? $_POST['token'] ?? '';
 
 if (empty($token)) {
     die("Token không hợp lệ.");
 }
 
 // Kiểm tra xem token có tồn tại và còn hạn không
-$sql = "SELECT id FROM users WHERE reset_token = ? AND reset_token_expires_at > NOW()";
+$sql = "SELECT MA_ND FROM NGUOI_DUNG WHERE MA_KHOI_PHUC = ? AND MA_KHOI_PHUC_HET_HAN > NOW()";
 if ($stmt = $conn->prepare($sql)) {
     $stmt->bind_param("s", $token);
     $stmt->execute();
@@ -33,6 +32,13 @@ if ($stmt = $conn->prepare($sql)) {
     <main class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-6 col-md-8">
+                <?php
+                // Hiển thị thông báo lỗi nếu có
+                if (!empty($_SESSION['error_reset'])) {
+                    echo '<div class="alert alert-danger">' . htmlspecialchars($_SESSION['error_reset']) . '</div>';
+                    unset($_SESSION['error_reset']);
+                }
+                ?>
                 <div class="card shadow">
                     <div class="card-body p-5">
                         <h2 class="card-title text-center mb-4">Đặt Lại Mật Khẩu Mới</h2>

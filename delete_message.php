@@ -1,6 +1,4 @@
-<?php
-// File: delete_message.php
-
+<?php // File: delete_message.php
 require_once 'config.php';
 
 // --- BẢO MẬT ---
@@ -23,7 +21,7 @@ if ($id_to_delete === false || $id_to_delete === null) {
 
 // --- XỬ LÝ XÓA ---
 // Sử dụng prepared statement để tránh lỗi SQL Injection.
-$sql = "DELETE FROM contact_messages WHERE id = ?";
+$sql = "DELETE FROM TIN_NHAN_LIEN_HE WHERE MA_TLH = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $id_to_delete);
 

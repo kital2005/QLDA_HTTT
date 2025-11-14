@@ -9,8 +9,11 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 // --- BẢO MẬT VÀ VALIDATION ---
-// 1. Kiểm tra giỏ hàng có trống không
-if (empty($_SESSION['cart'])) {
+// 1. Xác định giỏ hàng cần xử lý (ưu tiên "Mua ngay") và kiểm tra
+$is_buy_now_flow = isset($_SESSION['buy_now_cart']);
+$cart_to_process = $_SESSION['buy_now_cart'] ?? $_SESSION['cart'] ?? [];
+
+if (empty($cart_to_process)) {
     header("Location: index.php");
     exit;
 }
@@ -22,18 +25,18 @@ $customer_phone = trim($_POST['phone'] ?? '');
 $customer_address = trim($_POST['address'] ?? '');
 $notes = trim($_POST['notes'] ?? '');
 $payment_method = trim($_POST['payment_method'] ?? 'cod');
-$user_id = $_SESSION['user_id'] ?? null;
+$user_id = $_SESSION['user_ma_nd'] ?? null;
 
 // --- TÍNH TOÁN LẠI TỔNG TIỀN (ĐỂ ĐẢM BẢO AN TOÀN) ---
 $total_amount = 0;
 $cart_products = [];
-$product_ids = array_keys($_SESSION['cart']);
+$product_ids = array_keys($cart_to_process);
 
 if (!empty($product_ids)) {
     $ids_placeholder = implode(',', array_fill(0, count($product_ids), '?'));
     $types = str_repeat('i', count($product_ids));
     
-    $sql = "SELECT id, price FROM products WHERE id IN ($ids_placeholder)";
+    $sql = "SELECT MA_SP, GIA_BAN, TON_KHO FROM SAN_PHAM WHERE MA_SP IN ($ids_placeholder)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$product_ids);
     $stmt->execute();
@@ -41,12 +44,20 @@ if (!empty($product_ids)) {
     
     $products_from_db = [];
     while ($row = $result->fetch_assoc()) {
-        $products_from_db[$row['id']] = $row;
+        $products_from_db[$row['MA_SP']] = $row;
     }
     
-    foreach ($_SESSION['cart'] as $product_id => $quantity) {
+    foreach ($cart_to_process as $product_id => $quantity) {
         if (isset($products_from_db[$product_id])) {
-            $price = $products_from_db[$product_id]['price'];
+            // Kiểm tra lại lần cuối xem số lượng có đủ không
+            if ($quantity > $products_from_db[$product_id]['TON_KHO']) {
+                $_SESSION['message'] = "Sản phẩm '" . $products_from_db[$product_id]['TEN'] . "' không đủ số lượng trong kho. Vui lòng kiểm tra lại giỏ hàng.";
+                $_SESSION['message_type'] = "danger";
+                header("Location: cart.php");
+                exit;
+            }
+
+            $price = $products_from_db[$product_id]['GIA_BAN'];
             $total_amount += $price * $quantity;
             $cart_products[$product_id] = ['quantity' => $quantity, 'price' => $price];
         }
@@ -59,7 +70,7 @@ $conn->begin_transaction();
 
 try {
     // 1. Chèn vào bảng `orders`
-    $sql_order = "INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, customer_address, notes, total_amount, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql_order = "INSERT INTO DON_HANG (MA_ND, TEN_KHACH_HANG, EMAIL_KHACH_HANG, SDT_KHACH_HANG, DIA_CHI_GIAO_HANG, GHI_CHU, TONG_TIEN, PHUONG_THUC_THANH_TOAN) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_order = $conn->prepare($sql_order);
     $stmt_order->bind_param("isssssds", $user_id, $customer_name, $customer_email, $customer_phone, $customer_address, $notes, $total_amount, $payment_method);
     $stmt_order->execute();
@@ -67,7 +78,7 @@ try {
     $stmt_order->close();
 
     // 2. Chèn vào bảng `order_items`
-    $sql_items = "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)";
+    $sql_items = "INSERT INTO CHI_TIET_DON_HANG (MA_DH, MA_SP, SO_LUONG, DON_GIA) VALUES (?, ?, ?, ?)";
     $stmt_items = $conn->prepare($sql_items);
     foreach ($cart_products as $product_id => $details) {
         $stmt_items->bind_param("iiid", $order_id, $product_id, $details['quantity'], $details['price']);
@@ -75,11 +86,24 @@ try {
     }
     $stmt_items->close();
 
+    // 3. Cập nhật lại số lượng tồn kho (stock) trong bảng `products`
+    $sql_update_stock = "UPDATE SAN_PHAM SET TON_KHO = TON_KHO - ? WHERE MA_SP = ?";
+    $stmt_stock = $conn->prepare($sql_update_stock);
+    foreach ($cart_products as $product_id => $details) {
+        $stmt_stock->bind_param("ii", $details['quantity'], $product_id);
+        $stmt_stock->execute();
+    }
+    $stmt_stock->close();
+
     // Nếu mọi thứ thành công, commit transaction
     $conn->commit();
 
-    // Xóa giỏ hàng và chuyển hướng đến trang cảm ơn/trạng thái đơn hàng
-    unset($_SESSION['cart']);
+    // Xóa giỏ hàng đã xử lý và chuyển hướng
+    if ($is_buy_now_flow) {
+        unset($_SESSION['buy_now_cart']); // Xóa giỏ hàng "Mua ngay"
+    } else {
+        unset($_SESSION['cart']); // Xóa giỏ hàng chính
+    }
     header("Location: order_status.php?order_id=" . $order_id);
     exit;
 

@@ -11,18 +11,29 @@ $price_min = isset($_GET['price_min']) && is_numeric($_GET['price_min']) ? (int)
 $price_max = isset($_GET['price_max']) && is_numeric($_GET['price_max']) ? (int)$_GET['price_max'] : null;
 $rating_filter = isset($_GET['rating']) && is_numeric($_GET['rating']) ? (int)$_GET['rating'] : 0;
 
-// Định nghĩa các ID danh mục phụ kiện (cần khớp với CSDL của bạn)
-$accessory_category_ids = [5, 6, 7, 8]; // Ví dụ: 5=Tai nghe, 6=Sạc dự phòng, 7=Ốp lưng, 8=Cáp sạc
+// --- LẤY DANH SÁCH ID PHỤ KIỆN TỰ ĐỘNG TỪ CSDL ---
+// Giả sử các danh mục phụ kiện có tên chứa các từ khóa như 'Tai nghe', 'Sạc', 'Ốp lưng', 'Cáp'...
+$accessory_category_ids = [];
+$sql_acc_ids = "SELECT MA_DM FROM DANH_MUC WHERE 
+                LOWER(TEN) LIKE '%tai nghe%' OR 
+                LOWER(TEN) LIKE '%sạc%' OR 
+                LOWER(TEN) LIKE '%ốp lưng%'";
+$result_acc_ids = $conn->query($sql_acc_ids);
+if ($result_acc_ids) {
+    while($row = $result_acc_ids->fetch_assoc()) {
+        $accessory_category_ids[] = $row['MA_DM'];
+    }
+}
 
 // Lấy tất cả danh mục để hiển thị trong navigation
 $phone_categories_nav = [];
 $accessory_categories_nav = [];
 
-$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$sql_nav_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
 $result_nav_categories = $conn->query($sql_nav_categories);
 if ($result_nav_categories) {
     while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
-        if (in_array($row_nav_cat['id'], $accessory_category_ids)) {
+        if (in_array($row_nav_cat['MA_DM'], $accessory_category_ids)) {
             $accessory_categories_nav[] = $row_nav_cat;
         } else {
             $phone_categories_nav[] = $row_nav_cat;
@@ -32,7 +43,7 @@ if ($result_nav_categories) {
 
 // --- LẤY DANH SÁCH HÃNG ĐỂ HIỂN THỊ TRONG BỘ LỌC ---
 $categories = [];
-$sql_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$sql_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
 $result_categories = $conn->query($sql_categories);
 if ($result_categories->num_rows > 0) {
     while ($row_cat = $result_categories->fetch_assoc()) {
@@ -41,18 +52,18 @@ if ($result_categories->num_rows > 0) {
 }
 
 // --- XÂY DỰNG CÂU TRUY VẤN SQL ĐỘNG ---
-$sql = "SELECT id, name, description, price, originalPrice, rating, reviews, mainImage, is_new FROM products WHERE 1=1";
+$sql = "SELECT MA_SP, TEN, MO_TA, GIA_BAN, GIA_GOC, XEP_HANG, SO_DANH_GIA, ANH_DAI_DIEN, LA_HANG_MOI FROM SAN_PHAM WHERE 1=1";
 $params = [];
 $types = ''; // Khởi tạo lại $types cho truy vấn chính
 
 if (!empty($search_term)) {
-    $sql .= " AND LOWER(name) LIKE ?";
+    $sql .= " AND LOWER(TEN) LIKE ?";
     $params[] = '%' . strtolower($search_term) . '%';
     $types .= 's';
 }
 if ($category_id > 0) {
     // Nếu có category_id cụ thể, ưu tiên lọc theo category_id
-    $sql .= " AND category_id = ?";
+    $sql .= " AND MA_DM = ?";
     $params[] = $category_id;
     $types .= 'i';
 }
@@ -63,14 +74,14 @@ if ($category_id == 0) { // Chỉ áp dụng type filter nếu không có catego
     if ($product_type === 'phone') {
         if (!empty($accessory_category_ids)) {
             $ids_placeholder = implode(',', array_fill(0, count($accessory_category_ids), '?'));
-            $sql .= " AND category_id NOT IN ($ids_placeholder)";
+            $sql .= " AND MA_DM NOT IN ($ids_placeholder)";
             $params = array_merge($params, $accessory_category_ids);
             $types .= str_repeat('i', count($accessory_category_ids));
         }
     } elseif ($product_type === 'accessory') {
         if (!empty($accessory_category_ids)) {
             $ids_placeholder = implode(',', array_fill(0, count($accessory_category_ids), '?'));
-            $sql .= " AND category_id IN ($ids_placeholder)";
+            $sql .= " AND MA_DM IN ($ids_placeholder)";
             $params = array_merge($params, $accessory_category_ids);
             $types .= str_repeat('i', count($accessory_category_ids));
         }
@@ -80,14 +91,14 @@ if ($category_id == 0) { // Chỉ áp dụng type filter nếu không có catego
 // Logic mới cho bộ lọc "Tình trạng"
 if (in_array($category_id, $accessory_category_ids)) {
     // Nếu là phụ kiện, chỉ hiển thị sản phẩm mới (không cần đồ cũ)
-    $sql .= " AND is_new = 1";
+    $sql .= " AND LA_HANG_MOI = 1";
     $condition = 'new'; // Đặt mặc định là 'new' cho phụ kiện
 } else {
     // Nếu không phải phụ kiện, áp dụng bộ lọc tình trạng như bình thường
     if ($condition === 'new') {
-        $sql .= " AND is_new = 1";
+        $sql .= " AND LA_HANG_MOI = 1";
     } elseif ($condition === 'old') {
-        $sql .= " AND is_new = 0";
+        $sql .= " AND LA_HANG_MOI = 0";
     }
 }
 
@@ -98,24 +109,24 @@ if ($price_min !== null) {
     $types .= 'i';
 }
 if ($price_max !== null) {
-    $sql .= " AND price <= ?";
+    $sql .= " AND GIA_BAN <= ?";
     $params[] = $price_max;
     $types .= 'i';
 }
 
 // Lọc theo đánh giá
 if ($rating_filter > 0) {
-    $sql .= " AND rating >= ?";
+    $sql .= " AND XEP_HANG >= ?";
     $params[] = $rating_filter;
     $types .= 'i';
 }
 
 // Xử lý sắp xếp
 switch ($sort_order) {
-    case 'price_asc': $sql .= " ORDER BY price ASC"; break;
-    case 'price_desc': $sql .= " ORDER BY price DESC"; break;
-    case 'name_asc': $sql .= " ORDER BY name ASC"; break;
-    default: $sql .= " ORDER BY created_at DESC"; break; // Mới nhất
+    case 'price_asc': $sql .= " ORDER BY GIA_BAN ASC"; break;
+    case 'price_desc': $sql .= " ORDER BY GIA_BAN DESC"; break;
+    case 'name_asc': $sql .= " ORDER BY TEN ASC"; break;
+    default: $sql .= " ORDER BY NGAY_TAO DESC"; break; // Mới nhất
 }
 ?>
 <!DOCTYPE html>
@@ -161,6 +172,16 @@ switch ($sort_order) {
     </style>
   </head>
   <body>
+    <!-- GHI CHÚ: Thêm Toast Container để hiển thị thông báo -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
+      <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header">
+              <strong class="me-auto" id="toast-title">Thông báo</strong>
+              <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+          <div class="toast-body" id="toast-body"></div>
+      </div>
+    </div>
     <header class="sticky-top">
       <nav class="navbar navbar-expand-lg">        
         <div class="container">
@@ -182,7 +203,7 @@ switch ($sort_order) {
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <li><h6 class="dropdown-header">Điện thoại</h6></li>
                   <?php foreach ($phone_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
                   
@@ -190,7 +211,7 @@ switch ($sort_order) {
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -207,7 +228,7 @@ switch ($sort_order) {
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
                       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                           <li><a class="dropdown-item" href="account.php">Tài khoản của tôi</a></li>
@@ -225,7 +246,14 @@ switch ($sort_order) {
             </ul>
             <div class="ms-3 d-flex align-items-center">
               <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="fas fa-moon"></i></button>
-              <a href="cart.php" class="btn btn-primary ms-2 position-relative"><i class="fas fa-shopping-cart"></i></a>
+              <a href="cart.php" class="btn btn-primary ms-2 position-relative" aria-label="Giỏ hàng"><i class="fas fa-shopping-cart"></i>
+                <?php 
+                  $cart_count = isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0;
+                  if ($cart_count > 0) {
+                      echo '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">' . $cart_count . '</span>';
+                  }
+                ?>
+              </a>
             </div>
           </div>
         </div>
@@ -250,7 +278,7 @@ switch ($sort_order) {
                   <ul class="list-unstyled filter-list">
                     <li><a href="?" class="<?php if ($category_id == 0) echo 'active'; ?>">Tất cả</a></li>
                     <?php foreach ($categories as $category): ?>
-                      <li><a href="?category=<?php echo $category['id']; ?>" class="<?php if ($category_id == $category['id']) echo 'active'; ?>"><?php echo htmlspecialchars($category['name']); ?></a></li>
+                      <li><a href="?category=<?php echo $category['MA_DM']; ?>" class="<?php if ($category_id == $category['MA_DM']) echo 'active'; ?>"><?php echo htmlspecialchars($category['TEN']); ?></a></li>
                     <?php endforeach; ?>
                   </ul>
                 </div>
@@ -324,44 +352,44 @@ switch ($sort_order) {
                 // Bắt đầu vòng lặp qua từng sản phẩm
                 while($row = $result->fetch_assoc()) {
                     // Định dạng giá tiền
-                    $price_formatted = number_format($row["price"], 0, ',', '.') . '₫';
-                    $original_price_formatted = number_format($row["originalPrice"], 0, ',', '.') . '₫';
+                    $price_formatted = number_format($row["GIA_BAN"], 0, ',', '.') . '₫';
+                    $original_price_formatted = number_format($row["GIA_GOC"], 0, ',', '.') . '₫';
                     
                     // Tính toán số sao (làm tròn)
-                    $stars = round($row["rating"] ?? 0);
+                    $stars = round($row["XEP_HANG"] ?? 0);
           ?>
 
                     <div class="col">
                         <div class="card product-card h-100">
                             <?php // Hiển thị nhãn "Sale", "Mới", "Cũ"
-                            if ($row["originalPrice"] > 0 && $row["originalPrice"] > $row["price"]) {
+                            if ($row["GIA_GOC"] > 0 && $row["GIA_GOC"] > $row["GIA_BAN"]) {
                                 echo '<div class="badge bg-danger position-absolute">Sale</div>';
-                            } elseif (isset($row["is_new"]) && $row["is_new"] == 1) {
+                            } elseif (isset($row["LA_HANG_MOI"]) && $row["LA_HANG_MOI"] == 1) {
                                 echo '<div class="badge bg-success position-absolute">Mới</div>';
-                            } elseif (isset($row["is_new"]) && $row["is_new"] == 0) {
+                            } elseif (isset($row["LA_HANG_MOI"]) && $row["LA_HANG_MOI"] == 0) {
                                 echo '<div class="badge bg-info position-absolute">Cũ</div>';
                             }
                             ?>
                             <div class="product-image-container">
-                                <img src="<?php echo htmlspecialchars($row["mainImage"]); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($row["name"]); ?>" onerror="this.onerror=null;this.src='https://placehold.co/600x400/0d6efd/ffffff?text=Image+Not+Found'"/>
+                                <img src="<?php echo htmlspecialchars($row["ANH_DAI_DIEN"]); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($row["TEN"]); ?>" onerror="this.onerror=null;this.src='https://placehold.co/600x400/0d6efd/ffffff?text=Image+Not+Found'"/>
                                 <div class="product-overlay">
-                                    <a href="chitietsanpham.php?id=<?php echo $row["id"]; ?>" class="btn btn-light">Xem chi tiết</a>
+                                    <a href="chitietsanpham.php?id=<?php echo $row["MA_SP"]; ?>" class="btn btn-light">Xem chi tiết</a>
                                 </div>
                             </div>
                             <div class="card-body d-flex flex-column">
-                                <h5 class="card-title flex-grow-1"><a href="chitietsanpham.php?id=<?php echo $row["id"]; ?>" class="text-decoration-none text-dark stretched-link"><?php echo htmlspecialchars($row["name"]); ?></a></h5>
-                                <div class="ratings mb-2" title="Điểm trung bình: <?php echo number_format($row["rating"], 1); ?>">
+                                <h5 class="card-title flex-grow-1"><a href="chitietsanpham.php?id=<?php echo $row["MA_SP"]; ?>" class="text-decoration-none text-dark"><?php echo htmlspecialchars($row["TEN"]); ?></a></h5>
+                                <div class="ratings mb-2" title="Điểm trung bình: <?php echo number_format($row["XEP_HANG"], 1); ?>">
                                     <?php 
                                     for ($i = 1; $i <= 5; $i++) {
                                         $star_class = ($i <= $stars) ? 'text-warning' : 'text-secondary';
                                         echo '<i class="fas fa-star ' . $star_class . '"></i>';
                                     }
                                     ?>
-                                    <span class="ms-1 text-muted small">(<?php echo htmlspecialchars($row["reviews"] ?? 0); ?>)</span>
+                                    <span class="ms-1 text-muted small">(<?php echo htmlspecialchars($row["SO_DANH_GIA"] ?? 0); ?>)</span>
                                 </div>
                                 <div class="price mt-auto">
                                     <span class="current-price fw-bold text-danger fs-5"><?php echo $price_formatted; ?></span>
-                                    <?php if ($row["originalPrice"] > $row["price"]): ?>
+                                    <?php if ($row["GIA_GOC"] > $row["GIA_BAN"]): ?>
                                         <span class="original-price text-muted text-decoration-line-through ms-2"><?php echo $original_price_formatted; ?></span>
                                     <?php endif; ?>
                                 </div>
@@ -369,8 +397,8 @@ switch ($sort_order) {
                             <div class="card-footer bg-transparent">
                                 <form action="cart_actions.php" method="POST" class="d-grid">
                                     <input type="hidden" name="action" value="add">
-                                    <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
-                                    <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
+                                    <input type="hidden" name="product_id" value="<?php echo $row['MA_SP']; ?>">
+                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-cart-plus me-1"></i> Thêm vào giỏ hàng</button>
                                 </form>
                             </div>
                         </div>
@@ -390,7 +418,6 @@ switch ($sort_order) {
                       </div>';
             }
 
-            $conn->close(); // Đóng kết nối CSDL
             // KẾT THÚC KHỐI CODE PHP TRUY VẤN CSDL
           ?>
             </div>
@@ -464,6 +491,23 @@ switch ($sort_order) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="js/script.js"></script> 
+    <?php
+      // GHI CHÚ: Script để hiển thị Toast nếu có session message
+      if (isset($_SESSION['message']) && isset($_SESSION['message_type'])) {
+          $toast_title = ($_SESSION['message_type'] == 'success') ? 'Thành công!' : 'Thông báo';
+          echo "<script>
+              document.addEventListener('DOMContentLoaded', function() {
+                  var toastEl = document.getElementById('liveToast');
+                  document.getElementById('toast-title').innerText = '{$toast_title}';
+                  document.getElementById('toast-body').innerText = '{$_SESSION['message']}';
+                  var toast = new bootstrap.Toast(toastEl);
+                  toast.show();
+              });
+          </script>";
+          unset($_SESSION['message']);
+          unset($_SESSION['message_type']);
+      }
+    ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const categorySelect = document.querySelector('select[name="category"]');

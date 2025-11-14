@@ -1,5 +1,4 @@
-<?php
-session_start();
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 ?>
 <?php
 // Lấy tất cả danh mục để hiển thị trong navigation
@@ -10,11 +9,11 @@ $accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
 $phone_categories_nav = [];
 $accessory_categories_nav = [];
 
-$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$sql_nav_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
 $result_nav_categories = $conn->query($sql_nav_categories);
 if ($result_nav_categories) {
     while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
-        if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+        if (in_array($row_nav_cat['MA_DM'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
         else $phone_categories_nav[] = $row_nav_cat;
     }
 }
@@ -22,7 +21,7 @@ if ($result_nav_categories) {
 <?php
 // Lấy 4 sản phẩm nổi bật (ví dụ: rating cao)
 $featured_products = [];
-$sql_featured = "SELECT * FROM products WHERE rating >= 4.5 ORDER BY reviews DESC LIMIT 4";
+$sql_featured = "SELECT * FROM SAN_PHAM WHERE XEP_HANG >= 4.5 ORDER BY SO_DANH_GIA DESC LIMIT 4";
 $result_featured = $conn->query($sql_featured);
 if ($result_featured && $result_featured->num_rows > 0) {
     while($row = $result_featured->fetch_assoc()) {
@@ -32,13 +31,28 @@ if ($result_featured && $result_featured->num_rows > 0) {
 
 // Lấy 4 sản phẩm mới nhất
 $newest_products = [];
-$sql_newest = "SELECT * FROM products ORDER BY created_at DESC, id DESC LIMIT 4";
+$sql_newest = "SELECT * FROM SAN_PHAM ORDER BY NGAY_TAO DESC, MA_SP DESC LIMIT 4";
 $result_newest = $conn->query($sql_newest);
 if ($result_newest && $result_newest->num_rows > 0) {
     while($row = $result_newest->fetch_assoc()) {
         $newest_products[] = $row;
     }
 }
+
+// Lấy 3 đánh giá nổi bật để hiển thị
+$testimonials = [];
+$sql_testimonials = "SELECT r.BINH_LUAN, r.DIEM_XEP_HANG, u.TEN as user_name 
+                     FROM DANH_GIA r 
+                     JOIN NGUOI_DUNG u ON r.MA_ND = u.MA_ND 
+                     WHERE r.DIEM_XEP_HANG >= 4 AND r.BINH_LUAN IS NOT NULL AND LENGTH(r.BINH_LUAN) > 10 
+                     ORDER BY RAND() 
+                     LIMIT 3";
+$result_testimonials = $conn->query($sql_testimonials);
+if ($result_testimonials && $result_testimonials->num_rows > 0) {
+    $testimonials = $result_testimonials->fetch_all(MYSQLI_ASSOC);
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
@@ -100,6 +114,16 @@ if ($result_newest && $result_newest->num_rows > 0) {
     <!-- Header & Navigation -->
      
     <header class="sticky-top">
+      <!-- GHI CHÚ: Thêm Toast Container để hiển thị thông báo -->
+      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toast-title">Thông báo</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-body"></div>
+        </div>
+      </div>
       <nav class="navbar navbar-expand-lg">
         
         <div class="container">
@@ -133,7 +157,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <li><h6 class="dropdown-header">Điện thoại</h6></li>
                   <?php foreach ($phone_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
                   
@@ -141,7 +165,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -161,7 +185,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
                       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                           <li><a class="dropdown-item" href="account.php">Tài khoản của tôi</a></li>
@@ -185,10 +209,14 @@ if ($result_newest && $result_newest->num_rows > 0) {
               <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-moon"></i>
               </button>
-              <a href="cart.php" class="btn btn-primary ms-2 position-relative">
+              <a href="cart.php" class="btn btn-primary ms-2 position-relative" aria-label="Giỏ hàng">
                 <i class="fas fa-shopping-cart"></i>
-                <!-- Optional: Add a badge for cart items -->
-                <!-- <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span> -->
+                <?php 
+                  $cart_count = isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0;
+                  if ($cart_count > 0) {
+                      echo '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">' . $cart_count . '</span>';
+                  }
+                ?>
               </a>
             </div>
           </div>
@@ -276,7 +304,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
         // Lấy sản phẩm điện thoại đang Flash Sale
         $flash_sale_phone = null;
         $accessory_ids_string = implode(',', $accessory_category_ids);
-        $sql_phone_fs = "SELECT * FROM products WHERE is_flash_sale = 1 AND category_id NOT IN ($accessory_ids_string) LIMIT 1";
+        $sql_phone_fs = "SELECT * FROM SAN_PHAM WHERE LA_FLASH_SALE = 1 AND MA_DM NOT IN ($accessory_ids_string) LIMIT 1";
         $result_phone_fs = $conn->query($sql_phone_fs);
         if ($result_phone_fs && $result_phone_fs->num_rows > 0) {
             $flash_sale_phone = $result_phone_fs->fetch_assoc();
@@ -284,7 +312,7 @@ if ($result_newest && $result_newest->num_rows > 0) {
 
         // Lấy tối đa 2 phụ kiện đang Flash Sale
         $flash_sale_accessories = [];
-        $sql_acc_fs = "SELECT * FROM products WHERE is_flash_sale = 1 AND category_id IN ($accessory_ids_string) LIMIT 2";
+        $sql_acc_fs = "SELECT * FROM SAN_PHAM WHERE LA_FLASH_SALE = 1 AND MA_DM IN ($accessory_ids_string) LIMIT 2";
         $result_acc_fs = $conn->query($sql_acc_fs);
         if ($result_acc_fs && $result_acc_fs->num_rows > 0) {
             $flash_sale_accessories = $result_acc_fs->fetch_all(MYSQLI_ASSOC);
@@ -296,27 +324,32 @@ if ($result_newest && $result_newest->num_rows > 0) {
             <div class="card shadow-lg border-0 mb-5">
                 <div class="row g-0 align-items-center">
                     <div class="col-lg-5 text-center p-4 position-relative">
-                        <img src="<?php echo htmlspecialchars($flash_sale_phone['mainImage']); ?>" alt="<?php echo htmlspecialchars($flash_sale_phone['name']); ?>" class="img-fluid rounded-3 flash-sale-image" />
+                        <img src="<?php echo htmlspecialchars($flash_sale_phone['ANH_DAI_DIEN']); ?>" alt="<?php echo htmlspecialchars($flash_sale_phone['TEN']); ?>" class="img-fluid rounded-3 flash-sale-image" />
                         <!-- THÊM MỚI: Huy hiệu giảm giá, có z-index để không bị che -->
-                        <?php if (!empty($flash_sale_phone['flash_sale_discount']) && $flash_sale_phone['flash_sale_discount'] > 0): ?>
+                        <?php if (!empty($flash_sale_phone['GIAM_GIA_FLASH_SALE']) && $flash_sale_phone['GIAM_GIA_FLASH_SALE'] > 0): ?>
                             <div class="badge bg-danger text-white position-absolute" style="top: 1.5rem; right: 1.5rem; font-size: 1.2rem; padding: 0.8rem; transform: rotate(15deg); z-index: 10;">
-                                -<?php echo round($flash_sale_phone['flash_sale_discount']); ?>%
+                                -<?php echo round($flash_sale_phone['GIAM_GIA_FLASH_SALE']); ?>%
                             </div>
                         <?php endif; ?>
                     </div>
                     <div class="col-lg-7">
                         <div class="card-body p-4 p-lg-5">
-                            <h3 class="card-title fw-bold"><?php echo htmlspecialchars($flash_sale_phone['name']); ?></h3>
-                            <p class="card-text text-muted mb-3"><?php echo htmlspecialchars($flash_sale_phone['description']); ?></p>
+                            <h3 class="card-title fw-bold"><?php echo htmlspecialchars($flash_sale_phone['TEN']); ?></h3>
+                            <p class="card-text text-muted mb-3"><?php echo htmlspecialchars($flash_sale_phone['MO_TA']); ?></p>
                             <div class="price mb-3">
-                                <span class="current-price fs-2 text-danger fw-bold"><?php echo number_format($flash_sale_phone['price'], 0, ',', '.'); ?>₫</span>
-                                <?php if ($flash_sale_phone['originalPrice'] && $flash_sale_phone['originalPrice'] > $flash_sale_phone['price']): ?>
-                                    <span class="original-price fs-5 text-decoration-line-through text-muted ms-2"><?php echo number_format($flash_sale_phone['originalPrice'], 0, ',', '.'); ?>₫</span>
+                                <span class="current-price fs-2 text-danger fw-bold"><?php echo number_format($flash_sale_phone['GIA_BAN'], 0, ',', '.'); ?>₫</span>
+                                <?php if ($flash_sale_phone['GIA_GOC'] && $flash_sale_phone['GIA_GOC'] > $flash_sale_phone['GIA_BAN']): ?>
+                                    <span class="original-price fs-5 text-decoration-line-through text-muted ms-2"><?php echo number_format($flash_sale_phone['GIA_GOC'], 0, ',', '.'); ?>₫</span>
                                 <?php endif; ?>
                             </div>
                             <p class="fw-bold">Kết thúc sau:</p>
                             <div id="countdown" class="countdown-timer mb-4"></div>
-                            <a href="chitietsanpham.php?id=<?php echo $flash_sale_phone['id']; ?>" class="btn btn-danger btn-lg"><i class="fas fa-shopping-cart me-2"></i>Mua Ngay</a>
+                            <!-- SỬA LỖI: Chuyển nút "Mua Ngay" thành form để hoạt động đúng -->
+                            <form action="cart_actions.php" method="POST">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="product_id" value="<?php echo $flash_sale_phone['MA_SP']; ?>">
+                                <button type="submit" name="buy_now" value="1" class="btn btn-danger btn-lg"><i class="fas fa-shopping-cart me-2"></i>Mua Ngay</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -330,15 +363,15 @@ if ($result_newest && $result_newest->num_rows > 0) {
                         <div class="col-md-6 col-lg-4">
                             <div class="card product-card h-100 position-relative">
                                 <!-- THÊM MỚI: Huy hiệu giảm giá cho phụ kiện, có z-index -->
-                                <?php if (!empty($accessory['flash_sale_discount']) && $accessory['flash_sale_discount'] > 0): ?>
+                                <?php if (!empty($accessory['GIAM_GIA_FLASH_SALE']) && $accessory['GIAM_GIA_FLASH_SALE'] > 0): ?>
                                     <div class="badge bg-danger text-white position-absolute" style="top: 10px; right: 10px; font-size: 0.9rem; transform: rotate(10deg); z-index: 10;">
-                                        -<?php echo round($accessory['flash_sale_discount']); ?>%
+                                        -<?php echo round($accessory['GIAM_GIA_FLASH_SALE']); ?>%
                                     </div>
                                 <?php endif; ?>
-                                <a href="chitietsanpham.php?id=<?php echo $accessory['id']; ?>"><img src="<?php echo htmlspecialchars($accessory['mainImage']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($accessory['name']); ?>" /></a>
+                                <a href="chitietsanpham.php?id=<?php echo $accessory['MA_SP']; ?>"><img src="<?php echo htmlspecialchars($accessory['ANH_DAI_DIEN']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($accessory['TEN']); ?>" /></a>
                                 <div class="card-body text-center">
-                                    <h5 class="card-title fs-6"><?php echo htmlspecialchars($accessory['name']); ?></h5>
-                                    <div class="price"><span class="current-price"><?php echo number_format($accessory['price'], 0, ',', '.'); ?>₫</span></div>
+                                    <h5 class="card-title fs-6"><?php echo htmlspecialchars($accessory['TEN']); ?></h5>
+                                    <div class="price"><span class="current-price"><?php echo number_format($accessory['GIA_BAN'], 0, ',', '.'); ?>₫</span></div>
                                 </div>
                             </div>
                         </div>
@@ -366,42 +399,42 @@ if ($result_newest && $result_newest->num_rows > 0) {
             <?php foreach ($featured_products as $product): ?>
               <div class="col-md-6 col-lg-3">
                 <div class="card product-card h-100">
-                  <?php if ($product['originalPrice'] > $product['price']): ?>
+                  <?php if ($product['GIA_GOC'] > $product['GIA_BAN']): ?>
                     <div class="badge bg-danger position-absolute">Sale</div>
-                  <?php elseif ($product['is_new']): ?>
+                  <?php elseif ($product['LA_HANG_MOI']): ?>
                     <div class="badge bg-success position-absolute">New</div>
                   <?php endif; ?>
                   <div class="product-image-container">
-                    <img src="<?php echo htmlspecialchars($product['mainImage']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($product['name']); ?>" />
+                    <img src="<?php echo htmlspecialchars($product['ANH_DAI_DIEN']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($product['TEN']); ?>" />
                     <div class="product-overlay">
-                      <a href="chitietsanpham.php?id=<?php echo $product['id']; ?>" class="btn btn-light">Xem chi tiết</a>
+                      <a href="chitietsanpham.php?id=<?php echo $product['MA_SP']; ?>" class="btn btn-light">Xem chi tiết</a>
                     </div>
                   </div>
                   <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                      <h5 class="card-title mb-0"><?php echo htmlspecialchars($product['name']); ?></h5>
+                      <h5 class="card-title mb-0"><?php echo htmlspecialchars($product['TEN']); ?></h5>
                       <div class="price">
-                        <span class="current-price"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</span>
-                        <?php if ($product['originalPrice'] > $product['price']): ?>
-                          <span class="original-price"><?php echo number_format($product['originalPrice'], 0, ',', '.'); ?>₫</span>
+                        <span class="current-price"><?php echo number_format($product['GIA_BAN'], 0, ',', '.'); ?>₫</span>
+                        <?php if ($product['GIA_GOC'] > $product['GIA_BAN']): ?>
+                          <span class="original-price"><?php echo number_format($product['GIA_GOC'], 0, ',', '.'); ?>₫</span>
                         <?php endif; ?>
                       </div>
                     </div>
                     <div class="ratings mb-2">
                       <?php 
-                        $stars = round($product['rating']);
+                        $stars = round($product['XEP_HANG']);
                         for ($i = 1; $i <= 5; $i++) {
                             $star_class = ($i <= $stars) ? 'text-warning' : 'text-secondary';
                             echo '<i class="fas fa-star ' . $star_class . '"></i>';
                         }
                       ?>
-                      <span class="ms-1">(<?php echo $product['reviews']; ?>)</span>
+                      <span class="ms-1">(<?php echo $product['SO_DANH_GIA']; ?>)</span>
                     </div>
                   </div>
                   <div class="card-footer bg-transparent">
                     <form action="cart_actions.php" method="POST" class="d-grid">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                        <input type="hidden" name="product_id" value="<?php echo $product['MA_SP']; ?>">
                         <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
                     </form>
                   </div>
@@ -432,40 +465,40 @@ if ($result_newest && $result_newest->num_rows > 0) {
             <?php foreach ($newest_products as $product): ?>
               <div class="col-md-6 col-lg-3">
                 <div class="card product-card h-100">
-                  <?php if ($product['is_new']): ?>
+                  <?php if ($product['LA_HANG_MOI']): ?>
                     <div class="badge bg-primary position-absolute">Mới</div>
                   <?php endif; ?>
                   <div class="product-image-container">
-                    <img src="<?php echo htmlspecialchars($product['mainImage']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($product['name']); ?>" />
+                    <img src="<?php echo htmlspecialchars($product['ANH_DAI_DIEN']); ?>" class="card-img-top p-3" alt="<?php echo htmlspecialchars($product['TEN']); ?>" />
                     <div class="product-overlay">
-                      <a href="chitietsanpham.php?id=<?php echo $product['id']; ?>" class="btn btn-light">Xem chi tiết</a>
+                      <a href="chitietsanpham.php?id=<?php echo $product['MA_SP']; ?>" class="btn btn-light">Xem chi tiết</a>
                     </div>
                   </div>
                   <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                      <h5 class="card-title mb-0"><?php echo htmlspecialchars($product['name']); ?></h5>
+                      <h5 class="card-title mb-0"><?php echo htmlspecialchars($product['TEN']); ?></h5>
                       <div class="price">
-                        <span class="current-price"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</span>
-                        <?php if ($product['originalPrice'] > $product['price']): ?>
-                          <span class="original-price"><?php echo number_format($product['originalPrice'], 0, ',', '.'); ?>₫</span>
+                        <span class="current-price"><?php echo number_format($product['GIA_BAN'], 0, ',', '.'); ?>₫</span>
+                        <?php if ($product['GIA_GOC'] > $product['GIA_BAN']): ?>
+                          <span class="original-price"><?php echo number_format($product['GIA_GOC'], 0, ',', '.'); ?>₫</span>
                         <?php endif; ?>
                       </div>
                     </div>
                     <div class="ratings mb-2">
                       <?php 
-                        $stars = round($product['rating']);
+                        $stars = round($product['XEP_HANG']);
                         for ($i = 1; $i <= 5; $i++) {
                             $star_class = ($i <= $stars) ? 'text-warning' : 'text-secondary';
                             echo '<i class="fas fa-star ' . $star_class . '"></i>';
                         }
                       ?>
-                      <span class="ms-1">(<?php echo $product['reviews']; ?>)</span>
+                      <span class="ms-1">(<?php echo $product['SO_DANH_GIA']; ?>)</span>
                     </div>
                   </div>
                   <div class="card-footer bg-transparent">
                     <form action="cart_actions.php" method="POST" class="d-grid">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
+                        <input type="hidden" name="product_id" value="<?php echo $product['MA_SP']; ?>">
                         <button type="submit" class="btn btn-primary w-100">Thêm vào Giỏ hàng</button>
                     </form>
                   </div>
@@ -555,88 +588,36 @@ if ($result_newest && $result_newest->num_rows > 0) {
             Được tin tưởng bởi hàng nghìn khách hàng hài lòng
           </p>
         </div>
-        <div class="row g-4">
-          <div class="col-md-4">
-            <div class="testimonial-card p-4">
-              <div class="ratings mb-3">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-              </div>
-              <p class="testimonial-text mb-4">
-                "Điện thoại tôi mua từ Tech Phone chính xác như mô tả và đến sớm
-                hơn dự kiến. Dịch vụ tuyệt vời!"
-              </p>
-              <div class="d-flex align-items-center">
-                <img
-                  src="https://media.istockphoto.com/id/1949501832/photo/handsome-hispanic-senior-business-man-with-crossed-arms-smiling-at-camera-indian-or-latin.jpg?s=612x612&w=0&k=20&c=LtlsYrQxUyX7oRmYS37PnZeaV2JmoPX9hWYPOfojCgw="
-                  alt="Nguyễn Văn An"
-                  class="rounded-circle me-3"
-                  width="50"
-                />
-                <div>
-                  <h5 class="mb-0">Nguyễn Văn An</h5>
-                  <small class="text-muted">Người mua đã xác minh</small>
+        <div class="row g-4 justify-content-center">
+          <?php if (!empty($testimonials)): ?>
+            <?php foreach ($testimonials as $testimonial): ?>
+              <div class="col-md-6 col-lg-4">
+                <div class="testimonial-card p-4 h-100">
+                  <div class="ratings mb-3">
+                    <?php for ($i = 0; $i < 5; $i++): ?>
+                      <i class="fas fa-star <?php echo ($i < $testimonial['DIEM_XEP_HANG']) ? 'text-warning' : 'text-secondary'; ?>"></i>
+                    <?php endfor; ?>
+                  </div>
+                  <p class="testimonial-text mb-4 fst-italic">
+                    "<?php echo htmlspecialchars($testimonial['BINH_LUAN']); ?>"
+                  </p>
+                  <div class="d-flex align-items-center mt-auto">
+                    <div class="testimonial-avatar me-3">
+                      <i class="fas fa-user-circle fa-2x"></i>
+                    </div>
+                    <div>
+                      <h5 class="mb-0"><?php echo htmlspecialchars($testimonial['user_name']); ?></h5>
+                      <small class="text-muted">Người mua đã xác minh</small>
+                    </div>
+                  </div>
                 </div>
               </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <div class="col-12">
+              <p class="text-center text-muted">Chưa có đánh giá nào nổi bật để hiển thị.</p>
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="testimonial-card p-4">
-              <div class="ratings mb-3">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-              </div>
-              <p class="testimonial-text mb-4">
-                "Bộ sưu tập phụ kiện tuyệt vời với giá cạnh tranh. Bộ sạc không
-                dây hoạt động hoàn hảo với điện thoại của tôi."
-              </p>
-              <div class="d-flex align-items-center">
-                <img
-                  src="https://media.istockphoto.com/id/2166802740/photo/confident-businessman-smiling-in-sunlit-urban-environment.jpg?s=612x612&w=0&k=20&c=uZbVP0PASg3zNgDsn58q0TDPLzJbo2A7FueSDyGt96c="
-                  alt="Trần Minh Tuấn"
-                  class="rounded-circle me-3"
-                  width="50"
-                />
-                <div>
-                  <h5 class="mb-0">Trần Minh Tuấn</h5>
-                  <small class="text-muted">Người mua đã xác minh</small>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="testimonial-card p-4">
-              <div class="ratings mb-3">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-              </div>
-              <p class="testimonial-text mb-4">
-                "Ấn tượng với giao hàng nhanh chóng và chất lượng sản phẩm. Chắc
-                chắn sẽ mua sắm ở đây lần nữa!"
-              </p>
-              <div class="d-flex align-items-center">
-                <img
-                  src="https://media.istockphoto.com/id/2165425298/photo/portrait-of-a-man-in-an-office.jpg?s=612x612&w=0&k=20&c=_UNK44x0NjsyR5m23BYH7P1AwKzDjE-Zxt5rYRjThFo="
-                  alt="Lê Thị Bích"
-                  class="rounded-circle me-3"
-                  width="50"
-                />
-                <div>
-                  <h5 class="mb-0">Lê Thị Bích</h5>
-                  <small class="text-muted">Người mua đã xác minh</small>
-                </div>
-              </div>
-            </div>
-          </div>
+          <?php endif; ?>
         </div>
       </div>
     </section>
@@ -859,5 +840,22 @@ if ($result_newest && $result_newest->num_rows > 0) {
     <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
     <!-- Custom JS -->
     <script src="js/script.js"></script>
+    <?php
+      // GHI CHÚ: Script để hiển thị Toast nếu có session message
+      if (isset($_SESSION['message']) && isset($_SESSION['message_type'])) {
+          $toast_title = ($_SESSION['message_type'] == 'success') ? 'Thành công!' : 'Thông báo';
+          echo "<script>
+              document.addEventListener('DOMContentLoaded', function() {
+                  var toastEl = document.getElementById('liveToast');
+                  document.getElementById('toast-title').innerText = '{$toast_title}';
+                  document.getElementById('toast-body').innerText = '{$_SESSION['message']}';
+                  var toast = new bootstrap.Toast(toastEl);
+                  toast.show();
+              });
+          </script>";
+          unset($_SESSION['message']);
+          unset($_SESSION['message_type']);
+      }
+    ?>
   </body>
 </html>

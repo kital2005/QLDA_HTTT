@@ -1,8 +1,5 @@
-<?php
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
+<?php // Đảm bảo session đã được bắt đầu trong config.php
+require_once 'config.php'; // Đảm bảo config.php đã được include
 // Ghi chú: Bảo mật - Chỉ admin mới được truy cập
 if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     // Nếu không phải admin, chuyển hướng về trang chủ
@@ -93,7 +90,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
               </li>
               <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?> (Admin)
+                      <i class="fas fa-user-shield me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?> (Admin)
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                       <li><a class="dropdown-item active" href="admin.php"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Admin Dashboard</a></li>

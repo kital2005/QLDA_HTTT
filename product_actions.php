@@ -1,7 +1,5 @@
-<?php
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+<?php // Đảm bảo session đã được bắt đầu trong config.php
+require_once "config.php";
 
 // Bảo mật: Chỉ admin mới được thực hiện các hành động này
 if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
@@ -9,9 +7,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     header("location: index.php");
     exit;
 }
-
-require_once "config.php";
-
 // Sử dụng $_REQUEST['action'] để nhận tham số từ cả GET (cho việc xóa) và POST (cho việc thêm/sửa).
 // Nếu không có action, mặc định là chuỗi rỗng.
 $action = $_REQUEST['action'] ?? '';
@@ -80,25 +75,26 @@ function uploadImage($fileInput, $uploadDir = 'images/products/') { // Thư mụ
 function addProduct() {
     global $conn;
     // Lấy dữ liệu từ form POST
-    $name = $_POST['name'];
-    $description = $_POST['description'];
-    $price = $_POST['price'];
-    $originalPrice = !empty($_POST['originalPrice']) ? $_POST['originalPrice'] : NULL;
-    $category_id = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : NULL;
-    $details = $_POST['details'];
-    $variants = $_POST['variants'] ?? '[]';
-    $article_content = $_POST['article_content'] ?? '';
-    $is_flash_sale = isset($_POST['is_flash_sale']) ? 1 : 0; // Lấy trạng thái flash sale
-    $flash_sale_discount = isset($_POST['flash_sale_discount']) ? (float)$_POST['flash_sale_discount'] : 0;
+    $ten = $_POST['TEN'];
+    $mo_ta = $_POST['MO_TA'];
+    $gia_ban = $_POST['GIA_BAN'];
+    $ton_kho = $_POST['TON_KHO'];
+    $gia_goc = !empty($_POST['GIA_GOC']) ? $_POST['GIA_GOC'] : NULL;
+    $ma_dm = !empty($_POST['MA_DM']) ? (int)$_POST['MA_DM'] : NULL;
+    $chi_tiet_ky_thuat = $_POST['CHI_TIET_KY_THUAT'];
+    $bien_the = $_POST['BIEN_THE'] ?? '[]';
+    $noi_dung_bai_viet = $_POST['NOI_DUNG_BAI_VIET'] ?? '';
+    $la_flash_sale = isset($_POST['LA_FLASH_SALE']) ? 1 : 0;
+    $giam_gia_flash_sale = isset($_POST['GIAM_GIA_FLASH_SALE']) ? (float)$_POST['GIAM_GIA_FLASH_SALE'] : 0;
 
     // TÍNH TOÁN LẠI GIÁ NẾU LÀ FLASH SALE
-    if ($is_flash_sale == 1 && $originalPrice > 0 && $flash_sale_discount > 0) {
-        $price = $originalPrice * (1 - $flash_sale_discount / 100);
+    if ($la_flash_sale == 1 && $gia_goc > 0 && $giam_gia_flash_sale > 0) {
+        $gia_ban = $gia_goc * (1 - $giam_gia_flash_sale / 100);
     }
 
     // Xử lý tải ảnh chính
-    $mainImage = uploadImage($_FILES['mainImage']);
-    if ($mainImage === false) {
+    $anh_dai_dien = uploadImage($_FILES['ANH_DAI_DIEN']);
+    if ($anh_dai_dien === false) {
         // Sửa lỗi: Đổi thành 'error' để nhất quán và hiển thị đúng
         $_SESSION['error'] = "Lỗi: Vui lòng chọn hình ảnh chính hợp lệ.";
         // $_SESSION['message_type'] = "danger";
@@ -117,13 +113,13 @@ function addProduct() {
             }
         }
     }
-    $images = json_encode($other_images_paths);
+    $danh_sach_anh = json_encode($other_images_paths);
 
     // Thêm cột flash_sale_discount vào câu lệnh SQL
-    $sql = "INSERT INTO products (name, category_id, description, price, originalPrice, mainImage, images, details, variants, article_content, is_flash_sale, flash_sale_discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO SAN_PHAM (TEN, MA_DM, MO_TA, GIA_BAN, TON_KHO, GIA_GOC, ANH_DAI_DIEN, DANH_SACH_ANH, CHI_TIET_KY_THUAT, BIEN_THE, NOI_DUNG_BAI_VIET, LA_FLASH_SALE, GIAM_GIA_FLASH_SALE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("sisddsssssid", $name, $category_id, $description, $price, $originalPrice, $mainImage, $images, $details, $variants, $article_content, $is_flash_sale, $flash_sale_discount);
+        $stmt->bind_param("sisidsssssidi", $ten, $ma_dm, $mo_ta, $gia_ban, $ton_kho, $gia_goc, $anh_dai_dien, $danh_sach_anh, $chi_tiet_ky_thuat, $bien_the, $noi_dung_bai_viet, $la_flash_sale, $giam_gia_flash_sale);
         
         if ($stmt->execute()) {
             $_SESSION['message'] = "Thêm sản phẩm thành công!";
@@ -145,29 +141,30 @@ function addProduct() {
 function editProduct() {
     global $conn;
     // Lấy dữ liệu từ form POST
-    $id = $_POST['id'];
-    $name = $_POST['name'];
-    $description = $_POST['description'];
-    $price = $_POST['price'];
-    $originalPrice = !empty($_POST['originalPrice']) ? $_POST['originalPrice'] : NULL;
-    $category_id = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : NULL;
-    $details = $_POST['details'];
-    $variants = $_POST['variants'] ?? '[]';
-    $article_content = $_POST['article_content'] ?? '';
-    $is_flash_sale = isset($_POST['is_flash_sale']) ? 1 : 0; // Lấy trạng thái flash sale
-    $flash_sale_discount = isset($_POST['flash_sale_discount']) ? (float)$_POST['flash_sale_discount'] : 0;
+    $ma_sp = $_POST['id']; // id từ form là MA_SP
+    $ten = $_POST['TEN'];
+    $mo_ta = $_POST['MO_TA'];
+    $gia_ban = $_POST['GIA_BAN'];
+    $ton_kho = $_POST['TON_KHO'];
+    $gia_goc = !empty($_POST['GIA_GOC']) ? $_POST['GIA_GOC'] : NULL;
+    $ma_dm = !empty($_POST['MA_DM']) ? (int)$_POST['MA_DM'] : NULL;
+    $chi_tiet_ky_thuat = $_POST['CHI_TIET_KY_THUAT'];
+    $bien_the = $_POST['BIEN_THE'] ?? '[]';
+    $noi_dung_bai_viet = $_POST['NOI_DUNG_BAI_VIET'] ?? '';
+    $la_flash_sale = isset($_POST['LA_FLASH_SALE']) ? 1 : 0;
+    $giam_gia_flash_sale = isset($_POST['GIAM_GIA_FLASH_SALE']) ? (float)$_POST['GIAM_GIA_FLASH_SALE'] : 0;
     $old_mainImage = $_POST['old_mainImage'] ?? '';
     $old_images_json = $_POST['old_images'] ?? '[]';
 
     // TÍNH TOÁN LẠI GIÁ NẾU LÀ FLASH SALE
-    if ($is_flash_sale == 1 && $originalPrice > 0 && $flash_sale_discount > 0) {
-        $price = $originalPrice * (1 - $flash_sale_discount / 100);
+    if ($la_flash_sale == 1 && $gia_goc > 0 && $giam_gia_flash_sale > 0) {
+        $gia_ban = $gia_goc * (1 - $giam_gia_flash_sale / 100);
     }
 
     // Xử lý ảnh chính: nếu có ảnh mới thì tải lên, không thì giữ ảnh cũ
-    $mainImage = uploadImage($_FILES['mainImage']);
-    if ($mainImage === false) {
-        $mainImage = $old_mainImage; // Giữ lại ảnh cũ nếu không có file mới được tải lên
+    $anh_dai_dien = uploadImage($_FILES['ANH_DAI_DIEN']);
+    if ($anh_dai_dien === false) {
+        $anh_dai_dien = $old_mainImage; // Giữ lại ảnh cũ nếu không có file mới được tải lên
     } else {
         // (Tùy chọn) Xóa file ảnh cũ nếu tải lên ảnh mới thành công
         if (!empty($old_mainImage) && file_exists($old_mainImage)) {
@@ -186,13 +183,13 @@ function editProduct() {
             }
         }
     }
-    $images = json_encode($other_images_paths);
+    $danh_sach_anh = json_encode($other_images_paths);
 
     // Thêm cột flash_sale_discount vào câu lệnh SQL
-    $sql = "UPDATE products SET name = ?, category_id = ?, description = ?, price = ?, originalPrice = ?, mainImage = ?, images = ?, details = ?, variants = ?, article_content = ?, is_flash_sale = ?, flash_sale_discount = ? WHERE id = ?";
+    $sql = "UPDATE SAN_PHAM SET TEN = ?, MA_DM = ?, MO_TA = ?, GIA_BAN = ?, TON_KHO = ?, GIA_GOC = ?, ANH_DAI_DIEN = ?, DANH_SACH_ANH = ?, CHI_TIET_KY_THUAT = ?, BIEN_THE = ?, NOI_DUNG_BAI_VIET = ?, LA_FLASH_SALE = ?, GIAM_GIA_FLASH_SALE = ? WHERE MA_SP = ?";
     
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("sisddsssssidi", $name, $category_id, $description, $price, $originalPrice, $mainImage, $images, $details, $variants, $article_content, $is_flash_sale, $flash_sale_discount, $id);
+        $stmt->bind_param("sisidsssssidii", $ten, $ma_dm, $mo_ta, $gia_ban, $ton_kho, $gia_goc, $anh_dai_dien, $danh_sach_anh, $chi_tiet_ky_thuat, $bien_the, $noi_dung_bai_viet, $la_flash_sale, $giam_gia_flash_sale, $ma_sp);
         
         if ($stmt->execute()) {
             $_SESSION['message'] = "Cập nhật sản phẩm thành công!";
@@ -222,21 +219,21 @@ function updateFlashSaleDetails() {
     $conn->begin_transaction();
     try {
         // Lấy giá gốc của sản phẩm
-        $stmt_get = $conn->prepare("SELECT originalPrice FROM products WHERE id = ?");
+        $stmt_get = $conn->prepare("SELECT GIA_GOC FROM SAN_PHAM WHERE MA_SP = ?");
         $stmt_get->bind_param("i", $product_id);
         $stmt_get->execute();
-        $originalPrice = $stmt_get->get_result()->fetch_assoc()['originalPrice'] ?? 0;
+        $gia_goc = $stmt_get->get_result()->fetch_assoc()['GIA_GOC'] ?? 0;
         $stmt_get->close();
 
         // Tính giá mới nếu flash sale được bật
-        $newPrice = $originalPrice;
-        if ($is_flash_sale == 1 && $originalPrice > 0 && $discount > 0) {
-            $newPrice = $originalPrice * (1 - $discount / 100);
+        $gia_ban_moi = $gia_goc;
+        if ($is_flash_sale == 1 && $gia_goc > 0 && $discount > 0) {
+            $gia_ban_moi = $gia_goc * (1 - $discount / 100);
         }
 
         // Cập nhật CSDL
-        $stmt_update = $conn->prepare("UPDATE products SET is_flash_sale = ?, flash_sale_discount = ?, price = ? WHERE id = ?");
-        $stmt_update->bind_param("iddi", $is_flash_sale, $discount, $newPrice, $product_id);
+        $stmt_update = $conn->prepare("UPDATE SAN_PHAM SET LA_FLASH_SALE = ?, GIAM_GIA_FLASH_SALE = ?, GIA_BAN = ? WHERE MA_SP = ?");
+        $stmt_update->bind_param("iddi", $is_flash_sale, $discount, $gia_ban_moi, $product_id);
         $stmt_update->execute();
         $stmt_update->close();
 
@@ -255,20 +252,20 @@ function deleteProduct() {
     $id = $_GET['id'];
 
     // Lấy đường dẫn các file ảnh để xóa
-    $stmt_select = $conn->prepare("SELECT mainImage, images FROM products WHERE id = ?");
+    $stmt_select = $conn->prepare("SELECT ANH_DAI_DIEN, DANH_SACH_ANH FROM SAN_PHAM WHERE MA_SP = ?");
     $stmt_select->bind_param("i", $id);
     $stmt_select->execute();
     $result = $stmt_select->get_result()->fetch_assoc();
     if ($result) {
         // Xóa ảnh chính
-        if (!empty($result['mainImage']) && file_exists($result['mainImage'])) unlink($result['mainImage']);
+        if (!empty($result['ANH_DAI_DIEN']) && file_exists($result['ANH_DAI_DIEN'])) unlink($result['ANH_DAI_DIEN']);
         // Xóa các ảnh phụ
-        $other_images = json_decode($result['images'], true);
+        $other_images = json_decode($result['DANH_SACH_ANH'], true);
         if (is_array($other_images)) foreach ($other_images as $img) if (!empty($img) && file_exists($img)) unlink($img);
     }
     $stmt_select->close();
 
-    $sql = "DELETE FROM products WHERE id = ?";
+    $sql = "DELETE FROM SAN_PHAM WHERE MA_SP = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     $stmt->execute();
@@ -278,5 +275,4 @@ function deleteProduct() {
     exit;
 }
 
-$conn->close();
 ?>

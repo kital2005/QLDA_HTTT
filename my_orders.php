@@ -7,17 +7,16 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_ma_nd'];
 
 // Lấy tất cả đơn hàng của người dùng hiện tại
-$sql = "SELECT id, order_date, total_amount, status FROM orders WHERE user_id = ? ORDER BY order_date DESC";
+$sql = "SELECT MA_DH, NGAY_DAT_HANG, TONG_TIEN, TRANG_THAI FROM DON_HANG WHERE MA_ND = ? ORDER BY NGAY_DAT_HANG DESC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $orders = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
-$conn->close();
 // Lấy tất cả danh mục để hiển thị trong navigation
 // Đảm bảo config.php đã được include ở đầu file
 
@@ -26,14 +25,15 @@ $accessory_category_ids = [5, 6, 7, 8]; // Cần khớp với CSDL của bạn
 $phone_categories_nav = [];
 $accessory_categories_nav = [];
 
-$sql_nav_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$sql_nav_categories = "SELECT MA_DM, TEN FROM DANH_MUC ORDER BY TEN ASC";
 $result_nav_categories = $conn->query($sql_nav_categories);
 if ($result_nav_categories) {
     while ($row_nav_cat = $result_nav_categories->fetch_assoc()) {
-        if (in_array($row_nav_cat['id'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
+        if (in_array($row_nav_cat['MA_DM'], $accessory_category_ids)) $accessory_categories_nav[] = $row_nav_cat;
         else $phone_categories_nav[] = $row_nav_cat;
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
@@ -61,13 +61,13 @@ if ($result_nav_categories) {
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                   <li><h6 class="dropdown-header">Điện thoại</h6></li>
                   <?php foreach ($phone_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-mobile-alt fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
                   <li><hr class="dropdown-divider" /></li>
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['id']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['name']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
                   <li><hr class="dropdown-divider" /></li>
@@ -77,8 +77,16 @@ if ($result_nav_categories) {
               <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
                   <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle active" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                          <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($_SESSION['user_ten']); ?>
                       </a>
+                      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                          <li><a class="dropdown-item" href="account.php"><i class="fas fa-user-circle fa-fw me-2"></i>Tài khoản của tôi</a></li>
+                          <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <li><a class="dropdown-item" href="admin.php"><i class="fas fa-cogs fa-fw me-2"></i>Trang quản trị</a></li>
+                          <?php endif; ?>
+                          <li><hr class="dropdown-divider"></li>
+                          <li><a class="dropdown-item" href="logout.php"><i class="fas fa-sign-out-alt fa-fw me-2"></i>Đăng xuất</a></li>
+                      </ul>
                   </li>
               <?php else: ?>
                   <li class="nav-item"><a class="nav-link" href="login.php">Đăng nhập</a></li>
@@ -107,29 +115,47 @@ if ($result_nav_categories) {
                                     <th>Tổng tiền</th>
                                     <th>Trạng thái</th>
                                     <th></th>
+                                    <th class="text-end">Thao tác</th> <!-- Thêm cột Thao tác -->
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($orders as $order): ?>
                                     <tr>
-                                        <td><strong>#<?php echo $order['id']; ?></strong></td>
-                                        <td><?php echo date('d/m/Y H:i', strtotime($order['order_date'])); ?></td>
-                                        <td><?php echo number_format($order['total_amount'], 0, ',', '.'); ?>₫</td>
+                                        <td><strong>#<?php echo $order['MA_DH']; ?></strong></td>
+                                        <td><?php echo date('d/m/Y H:i:s', strtotime($order['NGAY_DAT_HANG'])); ?></td>
+                                        <td><?php echo number_format($order['TONG_TIEN'], 0, ',', '.'); ?>₫</td>
                                         <td>
                                             <?php
                                                 $status_text = '';
                                                 $status_class = '';
-                                                switch ($order['status']) {
-                                                    case 'pending': $status_text = 'Chờ xử lý'; $status_class = 'text-warning'; break;
-                                                    case 'shipping': $status_text = 'Đang giao'; $status_class = 'text-info'; break;
-                                                    case 'delivered': $status_text = 'Đã giao'; $status_class = 'text-success'; break;
-                                                    case 'cancelled': $status_text = 'Đã hủy'; $status_class = 'text-danger'; break;
+                                                switch ($order['TRANG_THAI']) {
+                                                    case 'dang_cho': $status_text = 'Chờ xử lý'; $status_class = 'text-warning'; break;
+                                                    case 'dang_xac_nhan': $status_text = 'Đang xác nhận'; $status_class = 'text-primary'; break;
+                                                    case 'dang_giao': $status_text = 'Đang giao'; $status_class = 'text-info'; break;
+                                                    case 'da_giao': $status_text = 'Đã giao'; $status_class = 'text-success'; break;
+                                                    case 'da_huy': $status_text = 'Đã hủy'; $status_class = 'text-danger'; break;
+                                                    case 'da_tra_hang': $status_text = 'Đã trả hàng'; $status_class = 'text-dark'; break;
                                                 }
                                                 echo '<span class="fw-bold ' . $status_class . '">' . $status_text . '</span>';
                                             ?>
                                         </td>
                                         <td class="text-end">
-                                            <a href="order_status.php?order_id=<?php echo $order['id']; ?>" class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
+                                            <a href="order_status.php?order_id=<?php echo $order['MA_DH']; ?>" class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
+                                        </td>
+                                        <td class="text-end">
+                                            <?php if ($order['TRANG_THAI'] == 'dang_cho'): ?>
+                                                <a href="user_order_actions.php?action=cancel&id=<?php echo $order['MA_DH']; ?>" 
+                                                   class="btn btn-sm btn-danger" 
+                                                   onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
+                                                   <i class="fas fa-times me-1"></i>Hủy đơn
+                                                </a>
+                                            <?php elseif ($order['TRANG_THAI'] == 'dang_giao'): ?>
+                                                <a href="user_order_actions.php?action=request_cancel&id=<?php echo $order['MA_DH']; ?>" 
+                                                   class="btn btn-sm btn-warning"
+                                                   onclick="return confirm('Đơn hàng đang được giao. Bạn có muốn gửi yêu cầu hủy đến quản trị viên không?');">
+                                                   <i class="fas fa-question-circle me-1"></i>Yêu cầu hủy
+                                                </a>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

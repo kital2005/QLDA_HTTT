@@ -1,9 +1,6 @@
-<?php
-// Ghi chú: File này xử lý logic admin đổi mật khẩu cho người dùng.
+<?php // Ghi chú: File này xử lý logic admin đổi mật khẩu cho người dùng.
+// Đảm bảo session đã được bắt đầu trong config.php
 
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
 require_once 'config.php';
 
 // --- BẢO MẬT ---
@@ -40,7 +37,7 @@ if ($new_password !== $confirm_new_password) {
 // Mã hóa mật khẩu mới
 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-$sql = "UPDATE users SET password = ? WHERE id = ?";
+$sql = "UPDATE NGUOI_DUNG SET MAT_KHAU = ? WHERE MA_ND = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("si", $hashed_password, $user_id_to_update);
 

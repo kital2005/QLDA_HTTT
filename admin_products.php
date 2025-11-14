@@ -1,8 +1,8 @@
-<?php
+<?php // Đảm bảo session đã được bắt đầu trong config.php
 require_once 'config.php';
 
 // Bảo mật: Chỉ admin mới được truy cập
-if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') { // Đảm bảo session đã được bắt đầu trong config.php
     header("location: index.php");
     exit;
 }

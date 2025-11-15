@@ -11,19 +11,8 @@ $price_min = isset($_GET['price_min']) && is_numeric($_GET['price_min']) ? (int)
 $price_max = isset($_GET['price_max']) && is_numeric($_GET['price_max']) ? (int)$_GET['price_max'] : null;
 $rating_filter = isset($_GET['rating']) && is_numeric($_GET['rating']) ? (int)$_GET['rating'] : 0;
 
-// --- LẤY DANH SÁCH ID PHỤ KIỆN TỰ ĐỘNG TỪ CSDL ---
-// Giả sử các danh mục phụ kiện có tên chứa các từ khóa như 'Tai nghe', 'Sạc', 'Ốp lưng', 'Cáp'...
-$accessory_category_ids = [];
-$sql_acc_ids = "SELECT MA_DM FROM DANH_MUC WHERE 
-                LOWER(TEN) LIKE '%tai nghe%' OR 
-                LOWER(TEN) LIKE '%sạc%' OR 
-                LOWER(TEN) LIKE '%ốp lưng%'";
-$result_acc_ids = $conn->query($sql_acc_ids);
-if ($result_acc_ids) {
-    while($row = $result_acc_ids->fetch_assoc()) {
-        $accessory_category_ids[] = $row['MA_DM'];
-    }
-}
+// --- DANH SÁCH ID PHỤ KIỆN ĐƯỢC ĐỊNH NGHĨA CỨNG ---
+$accessory_category_ids = [5, 6, 7, 8]; // Giữ cho nhất quán với các file khác
 
 // Lấy tất cả danh mục để hiển thị trong navigation
 $phone_categories_nav = [];

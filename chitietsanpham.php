@@ -1,5 +1,12 @@
-<?php // BẮT ĐẦU KHỐI CODE PHP LẤY DỮ LIỆU SẢN PHẨM
-include 'config.php'; // Đảm bảo file kết nối CSDL tồn tại và session đã được bắt đầu
+<?php
+// Luôn bắt đầu session ở đầu trang
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+include 'config.php'; // Đảm bảo file kết nối CSDL tồn tại
+
+
 
 // 1. Lấy ID sản phẩm từ URL (chitietsanpham.php?id=X)
 $product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -353,19 +360,49 @@ if ($result_nav_categories) {
               </div>
             </div>
 
-            <form action="cart_actions.php" method="POST">
+            <form action="cart_actions.php" method="POST" class="mb-3">
                 <input type="hidden" name="action" value="add">
                 <input type="hidden" name="product_id" value="<?php echo $product['MA_SP']; ?>">
                 <!-- Gửi số lượng đã chọn -->
                 <input type="hidden" name="quantity" id="form_quantity" value="1"> 
                 <div class="d-grid gap-2 d-md-block">
-                    <button class="btn btn-primary btn-lg me-md-2" type="submit" <?php if ($product['TON_KHO'] <= 0) echo 'disabled'; ?>>
+                    <button class="btn btn-danger btn-lg me-md-2" type="submit" <?php if ($product['TON_KHO'] <= 0) echo 'disabled'; ?>>
                         <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ hàng
                     </button>
-                    <button class="btn btn-danger btn-lg" type="submit" name="buy_now" value="1" <?php if ($product['TON_KHO'] <= 0) echo 'disabled'; ?>>Mua ngay</button>
+                    <button class="btn btn-warning btn-lg" type="submit" name="buy_now" value="1" <?php if ($product['TON_KHO'] <= 0) echo 'disabled'; ?>>Mua ngay</button>
                 </div>
             </form>
+
+            <div class="comparison-actions">
+                <button id="compareBtn" class="btn btn-info btn-lg w-100" data-product-id="<?php echo $product['MA_SP']; ?>" data-product-name="<?php echo htmlspecialchars($product['TEN']); ?>">
+                    <i class="fas fa-exchange-alt me-2"></i>So sánh sản phẩm này
+                </button>
+            </div>
           </div>
+        </div>
+
+        <!-- GHI CHÚ: Modal để chọn sản phẩm so sánh -->
+        <div class="modal fade" id="compareModal" tabindex="-1" aria-labelledby="compareModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="compareModalLabel">Chọn sản phẩm để so sánh</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <p>Đang so sánh với: <strong id="firstProductName"></strong></p>
+                            <input type="search" id="compareSearchInput" class="form-control" placeholder="Nhập tên sản phẩm cần tìm...">
+                        </div>
+                        <div id="compareProductsList" class="row g-3">
+                            <!-- Kết quả tìm kiếm sẽ được tải vào đây -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="product-tabs mt-5">
@@ -843,6 +880,84 @@ if ($result_nav_categories) {
                 }
             }
         });
+    </script>
+    <script>
+    // === SCRIPT SO SÁNH SẢN PHẨM ===
+    document.addEventListener('DOMContentLoaded', function() {
+        const compareBtn = document.getElementById('compareBtn');
+        const compareModal = new bootstrap.Modal(document.getElementById('compareModal'));
+        const firstProductNameEl = document.getElementById('firstProductName');
+        const searchInput = document.getElementById('compareSearchInput');
+        const productsListEl = document.getElementById('compareProductsList');
+
+        let firstProductId = null;
+        let debounceTimer;
+
+        // 1. Mở Modal và tải danh sách ban đầu
+        compareBtn.addEventListener('click', function() {
+            firstProductId = this.dataset.productId;
+            firstProductNameEl.textContent = this.dataset.productName;
+            
+            // Reset thanh tìm kiếm và tải lại danh sách
+            searchInput.value = '';
+            loadComparisonProducts();
+            
+            compareModal.show();
+        });
+
+        // 2. Xử lý tìm kiếm trực tiếp
+        searchInput.addEventListener('keyup', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                loadComparisonProducts(this.value);
+            }, 300); // Chờ 300ms sau khi người dùng ngừng gõ
+        });
+
+        // 3. Hàm tải sản phẩm qua AJAX
+        function loadComparisonProducts(query = '') {
+            productsListEl.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+            const url = `search_compare_products.php?first_product_id=${firstProductId}&query=${encodeURIComponent(query)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(products => {
+                    renderProducts(products);
+                })
+                .catch(error => {
+                    console.error('Error loading comparison products:', error);
+                    productsListEl.innerHTML = '<div class="col-12"><div class="alert alert-danger">Không thể tải danh sách sản phẩm. Vui lòng thử lại.</div></div>';
+                });
+        }
+
+        // 4. Hàm hiển thị sản phẩm trong modal
+        function renderProducts(products) {
+            productsListEl.innerHTML = ''; // Xóa nội dung cũ
+            if (products.length === 0) {
+                productsListEl.innerHTML = '<div class="col-12"><p class="text-center text-muted">Không tìm thấy sản phẩm phù hợp.</p></div>';
+                return;
+            }
+
+            products.forEach(product => {
+                const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price);
+                const compareUrl = `sosanh.php?ids[]=${firstProductId}&ids[]=${product.id}`;
+
+                const productHTML = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 text-center">
+                            <img src="${product.image}" class="card-img-top p-2" alt="${product.name}" style="height: 150px; object-fit: contain;">
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title small">${product.name}</h6>
+                                <p class="card-text text-danger fw-bold mt-auto">${priceFormatted}</p>
+                                <a href="${compareUrl}" class="btn btn-sm btn-primary stretched-link">Chọn để so sánh</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                productsListEl.insertAdjacentHTML('beforeend', productHTML);
+            });
+        }
+    });
     </script>
   </body>
 </html>

@@ -18,16 +18,22 @@ $filter_type = $_GET['type'] ?? 'all'; // 'all', 'phone', 'accessory'
 $accessory_category_ids = [5, 6, 7, 8];
 
 /**
- * Hàm lấy sản phẩm dựa trên loại và từ khóa tìm kiếm
+ * Hàm lấy sản phẩm dựa trên loại, từ khóa tìm kiếm và phân trang
  * @param mysqli $conn Đối tượng kết nối CSDL
  * @param string $type 'phone' hoặc 'accessory'
  * @param array $accessory_ids Mảng các ID danh mục phụ kiện
  * @param string $search_term Từ khóa tìm kiếm
- * @return array Mảng các sản phẩm
+ * @param int $page Trang hiện tại
+ * @param int $per_page Số sản phẩm mỗi trang
+ * @return array Mảng chứa 'products' và 'total'
  */
-function getProductsByType($conn, $type, $accessory_ids, $search_term) {
+function getProductsByType($conn, $type, $accessory_ids, $search_term, $page = 1, $per_page = 12) {
     $products = [];
-    $sql = "SELECT * FROM SAN_PHAM";
+    $total = 0;
+    $offset = ($page - 1) * $per_page;
+
+    // --- Xây dựng điều kiện WHERE ---
+    $base_sql = "FROM SAN_PHAM";
     $conditions = [];
     $params = [];
     $types = '';
@@ -53,28 +59,60 @@ function getProductsByType($conn, $type, $accessory_ids, $search_term) {
         $params[] = '%' . strtolower($search_term) . '%';
         $types .= 's';
     }
-
+    
+    $where_clause = '';
     if (!empty($conditions)) {
-        $sql .= " WHERE " . implode(' AND ', $conditions);
+        $where_clause = " WHERE " . implode(' AND ', $conditions);
     }
-    $sql .= " ORDER BY MA_SP DESC";
 
-    $stmt = $conn->prepare($sql);
+    // --- Đếm tổng số sản phẩm ---
+    $count_sql = "SELECT COUNT(MA_SP) as total " . $base_sql . $where_clause;
+    $stmt_count = $conn->prepare($count_sql);
     if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+        $stmt_count->bind_param($types, ...$params);
     }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result) {
-        $products = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt_count->execute();
+    $result_count = $stmt_count->get_result();
+    $total = $result_count->fetch_assoc()['total'] ?? 0;
+    $stmt_count->close();
+
+    // --- Lấy sản phẩm cho trang hiện tại ---
+    $product_sql = "SELECT * " . $base_sql . $where_clause . " ORDER BY MA_SP DESC LIMIT ? OFFSET ?";
+    $product_params = $params;
+    $product_types = $types . 'ii';
+    $product_params[] = $per_page;
+    $product_params[] = $offset;
+
+    $stmt_products = $conn->prepare($product_sql);
+    if (!empty($product_params)) {
+        $stmt_products->bind_param($product_types, ...$product_params);
     }
-    $stmt->close();
-    return $products;
+    $stmt_products->execute();
+    $result_products = $stmt_products->get_result();
+    if ($result_products) {
+        $products = $result_products->fetch_all(MYSQLI_ASSOC);
+    }
+    $stmt_products->close();
+
+    return ['products' => $products, 'total' => $total];
 }
 
-// Lấy danh sách sản phẩm cho từng loại
-$phone_products = getProductsByType($conn, 'phone', $accessory_category_ids, $search_term);
-$accessory_products = getProductsByType($conn, 'accessory', $accessory_category_ids, $search_term);
+// --- Cấu hình phân trang ---
+$products_per_page = 12;
+$current_phone_page = isset($_GET['phone_page']) ? (int)$_GET['phone_page'] : 1;
+$current_accessory_page = isset($_GET['acc_page']) ? (int)$_GET['acc_page'] : 1;
+
+// Lấy danh sách sản phẩm cho từng loại, có phân trang
+$phone_data = getProductsByType($conn, 'phone', $accessory_category_ids, $search_term, $current_phone_page, $products_per_page);
+$phone_products = $phone_data['products'];
+$total_phone_products = $phone_data['total'];
+$total_phone_pages = ceil($total_phone_products / $products_per_page);
+
+$accessory_data = getProductsByType($conn, 'accessory', $accessory_category_ids, $search_term, $current_accessory_page, $products_per_page);
+$accessory_products = $accessory_data['products'];
+$total_accessory_products = $accessory_data['total'];
+$total_accessory_pages = ceil($total_accessory_products / $products_per_page);
+
 
 // Truy vấn lấy tất cả danh mục/hãng để hiển thị trong modal
 $categories = [];
@@ -245,10 +283,39 @@ if ($result_categories->num_rows > 0) {
                         </tr>
                     <?php endif; ?>
                 </tbody>
-            </table>
-        </div>
-
-        <!-- Bảng Phụ kiện -->
+                        </table>
+                    </div>
+                    <!-- Pagination for Phones -->
+                    <?php if ($total_phone_pages > 1): ?>
+                    <nav aria-label="Phone Products Pagination" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            <?php
+                            $query_params = ['search' => $search_term];
+                            // Previous
+                            if ($current_phone_page > 1) {
+                                $query_params['phone_page'] = $current_phone_page - 1;
+                                echo '<li class="page-item"><a class="page-link" href="?' . http_build_query($query_params) . '">Trước</a></li>';
+                            } else {
+                                echo '<li class="page-item disabled"><a class="page-link" href="#">Trước</a></li>';
+                            }
+                            // Pages
+                            for ($i = 1; $i <= $total_phone_pages; $i++) {
+                                $query_params['phone_page'] = $i;
+                                $active_class = ($i == $current_phone_page) ? 'active' : '';
+                                echo '<li class="page-item ' . $active_class . '"><a class="page-link" href="?' . http_build_query($query_params) . '">' . $i . '</a></li>';
+                            }
+                            // Next
+                            if ($current_phone_page < $total_phone_pages) {
+                                $query_params['phone_page'] = $current_phone_page + 1;
+                                echo '<li class="page-item"><a class="page-link" href="?' . http_build_query($query_params) . '">Sau</a></li>';
+                            } else {
+                                echo '<li class="page-item disabled"><a class="page-link" href="#">Sau</a></li>';
+                            }
+                            ?>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
+                    <!-- Bảng Phụ kiện -->
         <h3 class="mt-5">Phụ kiện</h3>
         <div class="table-responsive">
             <table class="table table-striped table-hover">
@@ -328,6 +395,36 @@ if ($result_categories->num_rows > 0) {
                 </tbody>
             </table>
         </div>
+        <!-- Pagination for Accessories -->
+        <?php if ($total_accessory_pages > 1): ?>
+        <nav aria-label="Accessory Products Pagination" class="mt-3">
+            <ul class="pagination justify-content-center">
+                <?php
+                $query_params = ['search' => $search_term];
+                // Previous
+                if ($current_accessory_page > 1) {
+                    $query_params['acc_page'] = $current_accessory_page - 1;
+                    echo '<li class="page-item"><a class="page-link" href="?' . http_build_query($query_params) . '">Trước</a></li>';
+                } else {
+                    echo '<li class="page-item disabled"><a class="page-link" href="#">Trước</a></li>';
+                }
+                // Pages
+                for ($i = 1; $i <= $total_accessory_pages; $i++) {
+                    $query_params['acc_page'] = $i;
+                    $active_class = ($i == $current_accessory_page) ? 'active' : '';
+                    echo '<li class="page-item ' . $active_class . '"><a class="page-link" href="?' . http_build_query($query_params) . '">' . $i . '</a></li>';
+                }
+                // Next
+                if ($current_accessory_page < $total_accessory_pages) {
+                    $query_params['acc_page'] = $current_accessory_page + 1;
+                    echo '<li class="page-item"><a class="page-link" href="?' . http_build_query($query_params) . '">Sau</a></li>';
+                } else {
+                    echo '<li class="page-item disabled"><a class="page-link" href="#">Sau</a></li>';
+                }
+                ?>
+            </ul>
+        </nav>
+        <?php endif; ?>
     </main>
 
     <!-- Product Modal (for Add/Edit) -->

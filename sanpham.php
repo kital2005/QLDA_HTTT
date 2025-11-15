@@ -41,74 +41,86 @@ if ($result_categories->num_rows > 0) {
 }
 
 // --- XÂY DỰNG CÂU TRUY VẤN SQL ĐỘNG ---
-$sql = "SELECT MA_SP, TEN, MO_TA, GIA_BAN, GIA_GOC, XEP_HANG, SO_DANH_GIA, ANH_DAI_DIEN, LA_HANG_MOI FROM SAN_PHAM WHERE 1=1";
+$sql_base = "FROM SAN_PHAM WHERE 1=1"; // Phần base cho cả 2 truy vấn
+$sql_select = "SELECT MA_SP, TEN, MO_TA, GIA_BAN, GIA_GOC, XEP_HANG, SO_DANH_GIA, ANH_DAI_DIEN, LA_HANG_MOI ";
 $params = [];
-$types = ''; // Khởi tạo lại $types cho truy vấn chính
+$types = '';
 
+// --- LOGIC LỌC (giữ nguyên) ---
 if (!empty($search_term)) {
-    $sql .= " AND LOWER(TEN) LIKE ?";
+    $sql_base .= " AND LOWER(TEN) LIKE ?";
     $params[] = '%' . strtolower($search_term) . '%';
     $types .= 's';
 }
 if ($category_id > 0) {
-    // Nếu có category_id cụ thể, ưu tiên lọc theo category_id
-    $sql .= " AND MA_DM = ?";
+    $sql_base .= " AND MA_DM = ?";
     $params[] = $category_id;
     $types .= 'i';
 }
-
-// Lọc theo type (phone/accessory) nếu không có category_id cụ thể
 $product_type = $_GET['type'] ?? '';
-if ($category_id == 0) { // Chỉ áp dụng type filter nếu không có category_id cụ thể
+if ($category_id == 0) {
     if ($product_type === 'phone') {
         if (!empty($accessory_category_ids)) {
             $ids_placeholder = implode(',', array_fill(0, count($accessory_category_ids), '?'));
-            $sql .= " AND MA_DM NOT IN ($ids_placeholder)";
+            $sql_base .= " AND MA_DM NOT IN ($ids_placeholder)";
             $params = array_merge($params, $accessory_category_ids);
             $types .= str_repeat('i', count($accessory_category_ids));
         }
     } elseif ($product_type === 'accessory') {
         if (!empty($accessory_category_ids)) {
             $ids_placeholder = implode(',', array_fill(0, count($accessory_category_ids), '?'));
-            $sql .= " AND MA_DM IN ($ids_placeholder)";
+            $sql_base .= " AND MA_DM IN ($ids_placeholder)";
             $params = array_merge($params, $accessory_category_ids);
             $types .= str_repeat('i', count($accessory_category_ids));
         }
     }
 }
-
-// Logic mới cho bộ lọc "Tình trạng"
 if (in_array($category_id, $accessory_category_ids)) {
-    // Nếu là phụ kiện, chỉ hiển thị sản phẩm mới (không cần đồ cũ)
-    $sql .= " AND LA_HANG_MOI = 1";
-    $condition = 'new'; // Đặt mặc định là 'new' cho phụ kiện
+    $sql_base .= " AND LA_HANG_MOI = 1";
+    $condition = 'new';
 } else {
-    // Nếu không phải phụ kiện, áp dụng bộ lọc tình trạng như bình thường
     if ($condition === 'new') {
-        $sql .= " AND LA_HANG_MOI = 1";
+        $sql_base .= " AND LA_HANG_MOI = 1";
     } elseif ($condition === 'old') {
-        $sql .= " AND LA_HANG_MOI = 0";
+        $sql_base .= " AND LA_HANG_MOI = 0";
     }
 }
-
-// Lọc theo khoảng giá
 if ($price_min !== null) {
-    $sql .= " AND price >= ?";
+    $sql_base .= " AND GIA_BAN >= ?";
     $params[] = $price_min;
     $types .= 'i';
 }
 if ($price_max !== null) {
-    $sql .= " AND GIA_BAN <= ?";
+    $sql_base .= " AND GIA_BAN <= ?";
     $params[] = $price_max;
     $types .= 'i';
 }
-
-// Lọc theo đánh giá
 if ($rating_filter > 0) {
-    $sql .= " AND XEP_HANG >= ?";
+    $sql_base .= " AND XEP_HANG >= ?";
     $params[] = $rating_filter;
     $types .= 'i';
 }
+
+// --- PHÂN TRANG ---
+$products_per_page = 12;
+$current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($current_page < 1) $current_page = 1;
+$offset = ($current_page - 1) * $products_per_page;
+
+// --- ĐẾM TỔNG SỐ SẢN PHẨM ---
+$sql_count = "SELECT COUNT(MA_SP) as total " . $sql_base;
+$stmt_count = $conn->prepare($sql_count);
+if (!empty($params)) {
+    $stmt_count->bind_param($types, ...$params);
+}
+$stmt_count->execute();
+$result_count = $stmt_count->get_result();
+$total_products = $result_count->fetch_assoc()['total'] ?? 0;
+$total_pages = ceil($total_products / $products_per_page);
+
+
+// --- XÂY DỰNG TRUY VẤN CUỐI CÙNG ĐỂ LẤY SẢN PHẨM ---
+$sql = $sql_select . $sql_base;
 
 // Xử lý sắp xếp
 switch ($sort_order) {
@@ -117,6 +129,12 @@ switch ($sort_order) {
     case 'name_asc': $sql .= " ORDER BY TEN ASC"; break;
     default: $sql .= " ORDER BY NGAY_TAO DESC"; break; // Mới nhất
 }
+
+// Thêm LIMIT và OFFSET cho phân trang
+$sql .= " LIMIT ? OFFSET ?";
+$params[] = $products_per_page;
+$params[] = $offset;
+$types .= 'ii';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -411,22 +429,41 @@ switch ($sort_order) {
           ?>
             </div>
 
-            <!-- Pagination (nếu cần) -->
+            <!-- Pagination -->
+            <?php if ($total_pages > 1): ?>
             <nav aria-label="Product Page Navigation" class="mt-5">
               <ul class="pagination justify-content-center">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Trước</a>
-                </li>
-                <li class="page-item active">
-                  <a class="page-link" href="#">1</a>
-                </li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item">
-                  <a class="page-link" href="#">Sau</a>
-                </li>
+                <?php
+                  // Giữ lại các tham số lọc và sắp xếp
+                  $query_params = $_GET;
+                  
+                  // Nút "Trước"
+                  $prev_page = $current_page - 1;
+                  $query_params['page'] = $prev_page;
+                  $prev_link = http_build_query($query_params);
+                  echo '<li class="page-item ' . ($current_page <= 1 ? 'disabled' : '') . '">';
+                  echo '<a class="page-link" href="?' . $prev_link . '" tabindex="-1" aria-disabled="true">Trước</a>';
+                  echo '</li>';
+
+                  // Các nút số trang
+                  for ($i = 1; $i <= $total_pages; $i++) {
+                      $query_params['page'] = $i;
+                      $page_link = http_build_query($query_params);
+                      $active_class = ($i == $current_page) ? 'active' : '';
+                      echo '<li class="page-item ' . $active_class . '"><a class="page-link" href="?' . $page_link . '">' . $i . '</a></li>';
+                  }
+
+                  // Nút "Sau"
+                  $next_page = $current_page + 1;
+                  $query_params['page'] = $next_page;
+                  $next_link = http_build_query($query_params);
+                  echo '<li class="page-item ' . ($current_page >= $total_pages ? 'disabled' : '') . '">';
+                  echo '<a class="page-link" href="?' . $next_link . '">Sau</a>';
+                  echo '</li>';
+                ?>
               </ul>
             </nav>
+            <?php endif; ?>
           </div>
         </div>
       </div>

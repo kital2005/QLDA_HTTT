@@ -28,11 +28,10 @@ if ($first_product_id > 0) {
         $types = '';
 
         if ($is_accessory) {
-            // Nếu là phụ kiện, tìm trong các danh mục phụ kiện
-            $placeholders = implode(',', array_fill(0, count($accessory_category_ids), '?'));
-            $category_condition = "MA_DM IN ($placeholders)";
-            $params = $accessory_category_ids;
-            $types = str_repeat('i', count($accessory_category_ids));
+            // Nếu là phụ kiện, chỉ tìm các sản phẩm trong cùng danh mục phụ kiện
+            $category_condition = "MA_DM = ?";
+            $params = [$first_product_category_id];
+            $types = 'i';
         } else {
             // Nếu là điện thoại, tìm trong các danh mục không phải phụ kiện
             $placeholders = implode(',', array_fill(0, count($accessory_category_ids), '?'));

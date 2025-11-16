@@ -1,5 +1,4 @@
-<?php // Đảm bảo session đã được bắt đầu trong config.php
-?>
+<?php // Đảm bảo session đã được bắt đầu trong config.php ?>
 <?php
 // Lấy tất cả danh mục để hiển thị trong navigation
 require_once 'config.php'; // Đảm bảo config.php đã được include
@@ -17,8 +16,7 @@ if ($result_nav_categories) {
         else $phone_categories_nav[] = $row_nav_cat;
     }
 }
-?>
-<?php
+
 // Lấy 4 sản phẩm nổi bật (ví dụ: rating cao)
 $featured_products = [];
 $sql_featured = "SELECT * FROM SAN_PHAM WHERE XEP_HANG >= 4.5 ORDER BY SO_DANH_GIA DESC LIMIT 4";
@@ -51,7 +49,6 @@ $result_testimonials = $conn->query($sql_testimonials);
 if ($result_testimonials && $result_testimonials->num_rows > 0) {
     $testimonials = $result_testimonials->fetch_all(MYSQLI_ASSOC);
 }
-
 
 ?>
 <!DOCTYPE html>
@@ -165,7 +162,7 @@ if ($result_testimonials && $result_testimonials->num_rows > 0) {
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars(fix_category_name($cat['TEN'])); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -240,7 +237,6 @@ if ($result_testimonials && $result_testimonials->num_rows > 0) {
               <a href="sanpham.php" class="btn btn-primary btn-lg"
                 >Khám phá Sản phẩm</a
               >
-              <a href="#" class="btn btn-outline-secondary btn-lg">Xem Demo</a>
             </div>
           </div>
           <div class="col-lg-6 hero-image">
@@ -773,30 +769,27 @@ if ($result_testimonials && $result_testimonials->num_rows > 0) {
           <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
             <h5 class="mb-3">Danh mục</h5>
             <ul class="list-unstyled">
+              <!-- Sửa đổi: Rút gọn danh mục và thêm link đúng -->
               <li class="mb-2">
-                <a href="#" class="text-white-50">Điện thoại thông minh</a>
+                <a href="sanpham.php?type=phone" class="text-white-50">Điện thoại</a>
               </li>
               <li class="mb-2">
-                <a href="#" class="text-white-50">Máy tính bảng</a>
+                <a href="sanpham.php?type=accessory" class="text-white-50">Phụ kiện</a>
               </li>
-              <li class="mb-2">
-                <a href="#" class="text-white-50">Thiết bị đeo</a>
-              </li>
-              <li class="mb-2">
-                <a href="#" class="text-white-50">Phụ kiện</a>
-              </li>
-              <li class="mb-2"><a href="#" class="text-white-50">Ưu đãi</a></li>
             </ul>
           </div>
           <div class="col-lg-4 col-md-4">
             <h5 class="mb-3">Bản tin</h5>
             <p>Đăng ký để nhận cập nhật về sản phẩm mới và ưu đãi đặc biệt.</p>
-            <form class="mb-3">
+            <!-- Sửa đổi: Form đăng ký nhanh -->
+            <form class="mb-3" action="register.php" method="GET">
               <div class="input-group">
                 <input
                   type="email"
                   class="form-control"
                   placeholder="Email của bạn"
+                  name="email"
+                  required
                 />
                 <button class="btn btn-primary" type="submit">Đăng ký</button>
               </div>

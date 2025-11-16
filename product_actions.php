@@ -173,7 +173,9 @@ function editProduct() {
     }
 
     // Xử lý các ảnh phụ: thêm ảnh mới vào danh sách ảnh cũ
-    $other_images_paths = json_decode($old_images_json, true) ?: [];
+    // SỬA LỖI: Luôn bắt đầu với danh sách ảnh cũ đã được cập nhật từ form
+    $other_images_paths = json_decode($old_images_json, true);
+    if (!is_array($other_images_paths)) $other_images_paths = [];
     if (!empty($_FILES['other_images']['name'][0])) {
         $file_count = count($_FILES['other_images']['name']);
         for ($i = 0; $i < $file_count; $i++) {

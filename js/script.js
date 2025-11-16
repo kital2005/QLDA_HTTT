@@ -106,29 +106,51 @@ $(document).ready(function () {
     $(".navbar-collapse").collapse("hide");
   });
 
-  function setupPasswordToggle(toggleId, passwordId) {
-    const toggleButton = document.getElementById(toggleId);
-    const passwordInput = document.getElementById(passwordId);
+  // ===============================================
+  // 2. CHỨC NĂNG ẨN/HIỆN MẬT KHẨU
+  // ===============================================
+  // Gắn sự kiện click vào tất cả các nút có class 'password-toggle-btn'
+  $('.password-toggle-btn').on('click', function (e) {
+    // 1. Ngăn chặn hành vi mặc định (quan trọng!)
+    e.preventDefault();
 
-    if (toggleButton && passwordInput) {
-      toggleButton.addEventListener("click", function () {
-        const type =
-          passwordInput.getAttribute("type") === "password"
-            ? "text"
-            : "password";
-        passwordInput.setAttribute("type", type);
+    // 2. Tìm các phần tử liên quan một cách chính xác
+    const button = $(this);
+    // Tìm thẻ div.position-relative gần nhất chứa nút này
+    const parentWrapper = button.closest('.position-relative'); 
+    // Từ thẻ div đó, tìm ô input bên trong
+    const passwordInput = parentWrapper.find('input');
+    // Tìm icon bên trong nút
+    const icon = button.find('i');
 
-        // Toggle eye icon
-        const icon = this.querySelector("i");
-        icon.classList.toggle("fa-eye");
-        icon.classList.toggle("fa-eye-slash");
-      });
+    // 3. Thực hiện thay đổi
+    if (passwordInput.attr('type') === 'password') {
+      // Nếu đang là password -> chuyển sang text và đổi icon
+      passwordInput.attr('type', 'text');
+      icon.removeClass('fa-eye').addClass('fa-eye-slash');
+    } else {
+      // Ngược lại, chuyển về password và đổi icon
+      passwordInput.attr('type', 'password');
+      icon.removeClass('fa-eye-slash').addClass('fa-eye');
     }
-  }
+  });
 
-  setupPasswordToggle("togglePassword", "password");
-  setupPasswordToggle("toggleConfirmPassword", "confirmPassword");
+  // Gắn sự kiện 'input' vào tất cả các ô input type="password"
+  $('input[type="password"]').on('input', function() {
+    // 1. Tìm các phần tử liên quan
+    const passwordInput = $(this);
+    const parentWrapper = passwordInput.closest('.position-relative');
+    const toggleButton = parentWrapper.find('.password-toggle-btn');
 
+    // 2. Kiểm tra xem ô input có nội dung hay không
+    if (passwordInput.val().length > 0) {
+      // Nếu có, hiện nút "con mắt"
+      toggleButton.removeClass('d-none');
+    } else {
+      // Nếu không, ẩn nút "con mắt"
+      toggleButton.addClass('d-none');
+    }
+  });
   let lastScrollTop = 0;
   const header = document.querySelector("header");
 
@@ -184,69 +206,6 @@ $(document).ready(function () {
 
   setupCountdown();
 
-  // =========================================================================
-  // === PHẦN 2: SỬA LỖI CODE RIÊNG CHO CÁC TRANG ĐĂNG NHẬP VÀ ĐĂNG KÝ ===
-  // =========================================================================
-
-  // --- CODE CHỈ DÀNH CHO TRANG ĐĂNG NHẬP ---
-  if ($("#loginForm").length) {
-    // Ẩn/hiện mật khẩu
-    $("#togglePassword").on("click", function () {
-      const passwordInput = $("#password");
-      const type =
-        passwordInput.attr("type") === "password" ? "text" : "password";
-      passwordInput.attr("type", type);
-      $(this).find("i").toggleClass("fa-eye fa-eye-slash");
-    });
-
-    // Validate form đăng nhập
-    $("#loginForm").submit(function (event) {
-      // Nếu form không hợp lệ (trống, sai định dạng), thì mới ngăn lại
-      if (!this.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      // Nếu form hợp lệ, không làm gì cả, để cho form tự gửi dữ liệu đến PHP
-      $(this).addClass("was-validated");
-    });
-  }
-
-  // --- CODE CHỈ DÀNH CHO TRANG ĐĂNG KÝ ---
-  if ($("#registerForm").length) {
-    // Ẩn/hiện mật khẩu
-    $("#togglePassword, #toggleConfirmPassword").on("click", function () {
-      const inputId =
-        $(this).attr("id") === "togglePassword"
-          ? "password"
-          : "confirmPassword";
-      const passwordInput = $("#" + inputId);
-      const type =
-        passwordInput.attr("type") === "password" ? "text" : "password";
-      passwordInput.attr("type", type);
-      $(this).find("i").toggleClass("fa-eye fa-eye-slash");
-    });
-
-    // Validate form đăng ký
-    $("#registerForm").submit(function (event) {
-      const password = document.getElementById("password");
-      const confirmPassword = document.getElementById("confirmPassword");
-
-      // Vẫn kiểm tra mật khẩu khớp nhau ở phía client để báo lỗi nhanh
-      if (password.value !== confirmPassword.value) {
-        confirmPassword.setCustomValidity("Mật khẩu xác nhận không khớp.");
-      } else {
-        confirmPassword.setCustomValidity("");
-      }
-
-      // Nếu form không hợp lệ, thì mới ngăn lại
-      if (!this.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      // Nếu hợp lệ, để form tự gửi dữ liệu đến PHP
-      $(this).addClass("was-validated");
-    });
-  }
   // ===============================================
   // 4. CHỨC NĂNG TRANG CHI TIẾT SẢN PHẨM
   // ===============================================

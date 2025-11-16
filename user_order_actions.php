@@ -38,8 +38,9 @@ $stmt_check->close();
 // --- XỬ LÝ HÀNH ĐỘNG ---
 switch ($action) {
     case 'cancel':
-        // Chỉ cho phép hủy khi trạng thái là 'pending'
-        if ($current_status !== 'dang_cho') {
+        $cancellable_statuses = ['dang_cho', 'dang_xac_nhan'];
+        // Chỉ cho phép hủy khi trạng thái là 'dang_cho' hoặc 'dang_xac_nhan'
+        if (!in_array($current_status, $cancellable_statuses)) {
             $_SESSION['error'] = "Không thể hủy đơn hàng ở trạng thái này.";
             break;
         }
@@ -77,15 +78,27 @@ switch ($action) {
         break;
 
     case 'request_cancel':
-        // Chỉ cho phép yêu cầu hủy khi trạng thái là 'shipping'
+        // Chỉ cho phép yêu cầu hủy khi trạng thái là 'dang_giao'
         if ($current_status !== 'dang_giao') {
             $_SESSION['error'] = "Không thể yêu cầu hủy đơn hàng ở trạng thái này.";
             break;
         }
-        $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI = 'dang_giao' WHERE MA_DH = ?"); // Giả sử yêu cầu hủy là một trạng thái trong 'dang_giao'
+        $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI_YEU_CAU = 'cho_huy', LY_DO_HUY_TRA = 'Người dùng yêu cầu hủy khi đang giao' WHERE MA_DH = ?");
         $stmt->bind_param("i", $order_id);
         $stmt->execute();
         $_SESSION['message'] = "Đã gửi yêu cầu hủy cho đơn hàng #" . $order_id . ". Vui lòng chờ quản trị viên xác nhận.";
+        break;
+
+    case 'request_return':
+        // Chỉ cho phép yêu cầu trả hàng khi trạng thái là 'da_giao'
+        if ($current_status !== 'da_giao') {
+            $_SESSION['error'] = "Không thể yêu cầu trả hàng cho đơn hàng ở trạng thái này.";
+            break;
+        }
+        $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI_YEU_CAU = 'cho_tra_hang', LY_DO_HUY_TRA = 'Người dùng yêu cầu trả hàng' WHERE MA_DH = ?");
+        $stmt->bind_param("i", $order_id);
+        $stmt->execute();
+        $_SESSION['message'] = "Đã gửi yêu cầu trả hàng cho đơn hàng #" . $order_id . ". Vui lòng chờ quản trị viên xác nhận.";
         break;
 }
 

@@ -1,4 +1,8 @@
 <?php // Đảm bảo session đã được bắt đầu trong config.php
+// SỬA LỖI: Bắt đầu session để có thể truy cập $_SESSION
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("location: login.php");

@@ -102,11 +102,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
               <i class="fas fa-crown me-2"></i>Quản lý Hạng Khách hàng
             </button>
           </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#order-requests" type="button" role="tab" aria-controls="order-requests" aria-selected="false">
-              <i class="fas fa-tasks me-2"></i>Yêu cầu Đơn hàng
-            </button>
-          </li>
         </ul>
 
         <!-- Ghi chú: Tab content -->
@@ -279,72 +274,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
             </div>
           </div>
 
-          <!-- Tab 3: Yêu cầu từ đơn hàng -->
-          <div class="tab-pane fade <?php echo (isset($_GET['tab']) && $_GET['tab'] == 'requests') ? 'show active' : ''; ?>" id="order-requests" role="tabpanel" aria-labelledby="requests-tab">
-             <h4 class="mb-4">Danh sách Yêu cầu Hủy/Trả hàng</h4>
-             <div class="table-responsive">
-                <table class="table table-striped">
-                   <thead>
-                      <tr>
-                         <th>ID Đơn hàng</th>
-                         <th>Khách hàng</th>
-                         <th>Loại Yêu cầu</th>
-                         <th>Lý do</th>
-                         <th>Ngày Yêu cầu</th>
-                         <th style="width: 25%;">Thao tác</th>
-                      </tr>
-                   </thead>
-                   <tbody>
-                      <?php
-                        $sql_requests = "SELECT d.MA_DH, d.TRANG_THAI, d.TRANG_THAI_YEU_CAU, d.LY_DO_HUY_TRA, d.NGAY_DAT_HANG, u.TEN 
-                                         FROM DON_HANG d 
-                                         JOIN NGUOI_DUNG u ON d.MA_ND = u.MA_ND 
-                                         WHERE d.TRANG_THAI_YEU_CAU IN ('cho_huy', 'cho_tra_hang') 
-                                         ORDER BY d.NGAY_DAT_HANG DESC";
-                        $result_requests = $conn->query($sql_requests);
-
-                        if ($result_requests && $result_requests->num_rows > 0) {
-                            while($row = $result_requests->fetch_assoc()) {
-                                echo "<tr>";
-                                echo "<td><a href='order_details.php?id=" . $row['MA_DH'] . "'>#" . htmlspecialchars($row['MA_DH']) . "</a></td>";
-                                echo "<td>" . htmlspecialchars($row['TEN']) . "</td>";
-                                
-                                $request_type_badge = '';
-                                if ($row['TRANG_THAI_YEU_CAU'] == 'cho_huy') {
-                                    $request_type_badge = '<span class="badge bg-warning text-dark">Yêu cầu Hủy</span>';
-                                } else {
-                                    $request_type_badge = '<span class="badge bg-info text-dark">Yêu cầu Trả hàng</span>';
-                                }
-                                echo "<td>" . $request_type_badge . "</td>";
-                                
-                                echo "<td>" . htmlspecialchars($row['LY_DO_HUY_TRA']) . "</td>";
-                                echo "<td>" . date("d-m-Y", strtotime($row['NGAY_DAT_HANG'])) . "</td>";
-                                
-                                echo '<td>';
-                                echo '<form action="process_order_request.php" method="POST" class="d-inline-block">';
-                                echo '<input type="hidden" name="order_id" value="' . $row['MA_DH'] . '">';
-                                echo '<input type="hidden" name="request_type" value="' . $row['TRANG_THAI_YEU_CAU'] . '">';
-                                
-                                // Nút Duyệt
-                                echo '<button type="submit" name="decision" value="approve" class="btn btn-sm btn-success me-2" onclick="return confirm(\'Bạn có chắc muốn DUYỆT yêu cầu này?\');">Duyệt</button>';
-                                
-                                // Nút Từ chối
-                                echo '<button type="submit" name="decision" value="deny" class="btn btn-sm btn-danger" onclick="return confirm(\'Bạn có chắc muốn TỪ CHỐI yêu cầu này?\');">Từ chối</button>';
-                                
-                                echo '</form>';
-                                echo '</td>';
-
-                                echo "</tr>";
-                            }
-                        } else {
-                            echo '<tr><td colspan="6" class="text-center">Không có yêu cầu nào đang chờ xử lý.</td></tr>';
-                        }
-                      ?>
-                   </tbody>
-                </table>
-             </div>
-          </div>
-
         </div>
       </div>
     </section>
@@ -446,7 +375,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
 
     <!-- 5. JAVASCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/script.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
             const detailsModalEl = document.getElementById('messageDetailsModal');
@@ -497,5 +426,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
             }
       });
     </script>
+    <script src="js/script.js"></script>
   </body>
 </html>

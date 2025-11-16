@@ -81,6 +81,74 @@ if (!empty($product_ids)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <link rel="stylesheet" href="css/style.css" />
 </head>
+<!-- Modal chọn phương thức thanh toán -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Chọn phương thức thanh toán</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- COD -->
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="payment_method_option" id="pay_cod" value="cod" checked>
+          <label class="form-check-label" for="pay_cod">
+            Thanh toán khi nhận hàng (COD)
+          </label>
+        </div>
+
+        <!-- BANK TRANSFER -->
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="payment_method_option" id="pay_bank" value="bank_transfer">
+          <label class="form-check-label" for="pay_bank">
+            Thanh toán qua chuyển khoản
+          </label>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary w-100" id="confirmPaymentMethod">Xác nhận</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Cập nhật vào input hidden trong form đặt hàng
+  document.getElementById("confirmPaymentMethod").addEventListener("click", function() {
+      let selected = document.querySelector("input[name='payment_method_option']:checked").value;
+      
+      // Đưa vào input hidden trong form checkout
+      document.querySelector("input[name='payment_method']").value = selected;
+
+      // Nếu chọn chuyển khoản → chuyển trang QR
+      if (selected === "bank_transfer") {
+          // Lưu form vào session bằng AJAX
+          const form = document.getElementById("checkoutForm");
+          const formData = new FormData(form);
+
+          fetch("save_order_temp.php", {
+              method: "POST",
+              body: formData
+          }).then(() => {
+              window.location.href = "bank_transfer.php";
+          });
+
+          return;
+      }
+
+      // Đóng modal để tiếp tục đặt COD
+      let modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+      modal.hide();
+  });
+</script>
+
 <body class="d-flex flex-column min-vh-100">
     <header class="sticky-top shadow-sm">
       <nav class="navbar navbar-expand-lg">

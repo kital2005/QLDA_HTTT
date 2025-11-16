@@ -9,28 +9,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-$action = $_GET['action'] ?? '';
-$order_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-switch ($action) {
-    case 'delete':
-        if ($order_id > 0) {
-            deleteOrder($order_id);
-        } else {
-            $_SESSION['error'] = "ID đơn hàng không hợp lệ.";
-            header("Location: orders.php");
-            exit;
-        }
-        break;
-
-    default:
-        $_SESSION['error'] = "Hành động không hợp lệ.";
-        header("Location: orders.php");
-        exit;
-}
-
-$action = $_GET['action'] ?? '';
-$order_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$action = $_REQUEST['action'] ?? '';
+$order_id = isset($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
 
 switch ($action) {
     case 'delete':
@@ -44,15 +24,19 @@ switch ($action) {
         break;
 
     case 'approve_cancel':
-        if ($order_id > 0) {
-            approveCancellation($order_id);
-        }
+        if ($order_id > 0) approveCancellation($order_id);
         break;
 
     case 'deny_cancel':
-        if ($order_id > 0) {
-            denyCancellation($order_id);
-        }
+        if ($order_id > 0) denyCancellation($order_id);
+        break;
+
+    case 'approve_return':
+        if ($order_id > 0) approveReturn($order_id);
+        break;
+
+    case 'deny_return':
+        if ($order_id > 0) denyReturn($order_id);
         break;
 
     default:
@@ -75,13 +59,13 @@ function approveCancellation($id) {
         // 2. Cập nhật lại số lượng tồn kho cho từng sản phẩm
         $stmt_stock = $conn->prepare("UPDATE SAN_PHAM SET TON_KHO = TON_KHO + ? WHERE MA_SP = ?");
         foreach ($items as $item) {
-            $stmt_stock->bind_param("ii", $item['quantity'], $item['product_id']);
+            $stmt_stock->bind_param("ii", $item['SO_LUONG'], $item['MA_SP']);
             $stmt_stock->execute();
         }
         $stmt_stock->close();
 
-        // 3. Cập nhật trạng thái đơn hàng thành 'cancelled'
-        $stmt_cancel = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI = 'da_huy' WHERE MA_DH = ? AND TRANG_THAI = 'dang_giao'"); // Giả sử yêu cầu hủy chỉ có khi đang giao
+        // 3. Cập nhật trạng thái đơn hàng và trạng thái yêu cầu
+        $stmt_cancel = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI = 'da_huy', TRANG_THAI_YEU_CAU = 'da_huy' WHERE MA_DH = ?");
         $stmt_cancel->bind_param("i", $id);
         $stmt_cancel->execute();
         $stmt_cancel->close();
@@ -99,14 +83,47 @@ function approveCancellation($id) {
 
 function denyCancellation($id) {
     global $conn;
-    // Đơn giản là chuyển trạng thái về 'shipping'
-    $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI = 'dang_giao' WHERE MA_DH = ? AND TRANG_THAI = 'dang_giao'"); // Giả sử yêu cầu hủy chỉ có khi đang giao
+    // Chuyển trạng thái yêu cầu thành 'tu_choi_huy'
+    $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI_YEU_CAU = 'tu_choi_huy' WHERE MA_DH = ?");
     $stmt->bind_param("i", $id);
     if ($stmt->execute()) {
         $_SESSION['message'] = "Đã từ chối yêu cầu hủy cho đơn hàng #" . $id . ".";
         $_SESSION['message_type'] = "info";
     } else {
         $_SESSION['error'] = "Lỗi khi từ chối yêu cầu hủy.";
+    }
+    $stmt->close();
+    header("Location: orders.php");
+    exit;
+}
+
+function approveReturn($id) {
+    global $conn;
+    // Cập nhật trạng thái đơn hàng và yêu cầu
+    $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI = 'da_tra_hang', TRANG_THAI_YEU_CAU = 'da_tra_hang' WHERE MA_DH = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        $_SESSION['message'] = "Đã duyệt yêu cầu trả hàng cho đơn hàng #" . $id . ".";
+        $_SESSION['message_type'] = "success";
+        // Logic hoàn tiền hoặc các nghiệp vụ khác có thể thêm ở đây
+    } else {
+        $_SESSION['error'] = "Lỗi khi duyệt yêu cầu trả hàng.";
+    }
+    $stmt->close();
+    header("Location: orders.php");
+    exit;
+}
+
+function denyReturn($id) {
+    global $conn;
+    // Cập nhật trạng thái yêu cầu
+    $stmt = $conn->prepare("UPDATE DON_HANG SET TRANG_THAI_YEU_CAU = 'tu_choi_tra_hang' WHERE MA_DH = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        $_SESSION['message'] = "Đã từ chối yêu cầu trả hàng cho đơn hàng #" . $id . ".";
+        $_SESSION['message_type'] = "info";
+    } else {
+        $_SESSION['error'] = "Lỗi khi từ chối yêu cầu trả hàng.";
     }
     $stmt->close();
     header("Location: orders.php");

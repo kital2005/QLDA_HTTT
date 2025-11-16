@@ -870,12 +870,22 @@ if ($result_categories->num_rows > 0) {
             try {
                 const paths = JSON.parse(jsonString);
                 if (Array.isArray(paths)) {
-                    paths.forEach(path => {
-                        const imgHtml = `<img src="${path}" class="img-thumbnail" style="height: 60px; width: auto;" alt="Ảnh phụ">`;
-                        container.append(imgHtml);
+                    paths.forEach((path, index) => {
+                        // Gói mỗi ảnh trong một div để dễ quản lý và thêm nút xóa
+                        const imgWrapper = $(`
+                            <div class="image-preview-wrapper position-relative" data-path="${path}">
+                                <img src="${path}" class="img-thumbnail" style="height: 60px; width: auto;" alt="Ảnh phụ ${index + 1}">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0 delete-other-image-btn" style="width: 20px; height: 20px; line-height: 1;">
+                                    <i class="fas fa-times fa-xs"></i>
+                                </button>
+                            </div>
+                        `);
+                        container.append(imgWrapper);
                     });
                 }
             } catch (e) { console.error("Lỗi parse JSON ảnh:", e); }
+            // Kích hoạt kéo thả cho các ảnh
+            new Sortable(container[0], { animation: 150 });
         }
 
         // --- LOGIC CHO PHIÊN BẢN SẢN PHẨM ---
@@ -1039,6 +1049,22 @@ if ($result_categories->num_rows > 0) {
             });
             // Gán chuỗi JSON vào input ẩn
             $('#modalDetails').val(JSON.stringify(specsData));
+        });
+
+        // --- LOGIC MỚI: XÓA ẢNH PHỤ ---
+        $('#currentOtherImagesContainer').on('click', '.delete-other-image-btn', function() {
+            $(this).closest('.image-preview-wrapper').remove();
+        });
+
+        // --- CẬP NHẬT: THU THẬP DỮ LIỆU ẢNH PHỤ TRƯỚC KHI SUBMIT ---
+        $('#productModal form').on('submit', function() {
+            const updatedImagePaths = [];
+            $('#currentOtherImagesContainer .image-preview-wrapper').each(function() {
+                updatedImagePaths.push($(this).data('path'));
+            });
+            // Cập nhật lại input ẩn với danh sách ảnh mới (sau khi đã xóa/sắp xếp)
+            $('#modalOldImages').val(JSON.stringify(updatedImagePaths));
+            // Các logic khác giữ nguyên...
         });
 
         // Kích hoạt kéo thả

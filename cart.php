@@ -128,7 +128,7 @@ if (!empty($_SESSION['cart'])) {
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars(fix_category_name($cat['TEN'])); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -274,13 +274,6 @@ if (!empty($_SESSION['cart'])) {
                   <span>Tổng cộng</span>
                   <span class="text-danger"><?php echo number_format($total_price, 0, ',', '.'); ?>₫</span>
                 </div>
-                <div class="mb-3">
-                  <label for="voucher" class="form-label">Mã giảm giá</label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" id="voucher" placeholder="Nhập mã giảm giá" />
-                    <button class="btn btn-outline-secondary" type="button">Áp dụng</button>
-                  </div>
-                </div>
                 <a href="thanhtoan.php" class="btn btn-primary w-100 btn-lg">Tiến hành Thanh Toán</a>
               </div>
             </div>
@@ -362,39 +355,28 @@ if (!empty($_SESSION['cart'])) {
             <h5 class="mb-3">Danh mục</h5>
             <ul class="list-unstyled">
               <li class="mb-2">
-                <a href="#" class="text-white-50">Điện thoại thông minh</a>
+                <a href="sanpham.php?type=phone" class="text-white-50">Điện thoại</a>
               </li>
               <li class="mb-2">
-                <a href="#" class="text-white-50">Máy tính bảng</a>
+                <a href="sanpham.php?type=accessory" class="text-white-50">Phụ kiện</a>
               </li>
-              <li class="mb-2">
-                <a href="#" class="text-white-50">Thiết bị đeo</a>
-              </li>
-              <li class="mb-2">
-                <a href="#" class="text-white-50">Phụ kiện</a>
-              </li>
-              <li class="mb-2"><a href="#" class="text-white-50">Ưu đãi</a></li>
             </ul>
           </div>
           <div class="col-lg-4 col-md-4">
             <h5 class="mb-3">Bản tin</h5>
             <p>Đăng ký để nhận cập nhật về sản phẩm mới và ưu đãi đặc biệt.</p>
-            <form class="mb-3">
+            <form class="mb-3" action="register.php" method="GET">
               <div class="input-group">
                 <input
                   type="email"
                   class="form-control"
                   placeholder="Email của bạn"
+                  name="email"
+                  required
                 />
                 <button class="btn btn-primary" type="submit">Đăng ký</button>
               </div>
             </form>
-            <div class="payment-methods">
-              <i class="fa-brands fa-cc-visa"></i>
-              <i class="fa-brands fa-cc-mastercard"></i>
-              <i class="fa-brands fa-paypal"></i>
-              <i class="fa-brands fa-cc-apple-pay"></i>
-            </div>
           </div>
         </div>
         <hr class="my-4 bg-secondary" />
@@ -405,9 +387,9 @@ if (!empty($_SESSION['cart'])) {
             </p>
           </div>
           <div class="col-md-6 text-center text-md-end">
-            <a href="#" class="text-white-50 me-3">Chính sách Bảo mật</a>
-            <a href="#" class="text-white-50 me-3">Điều khoản Dịch vụ</a>
-            <a href="#" class="text-white-50">Chính sách Vận chuyển</a>
+            <a href="privacy_policy.php" class="text-white-50 me-3">Chính sách Bảo mật</a>
+            <a href="terms_of_service.php" class="text-white-50 me-3">Điều khoản Dịch vụ</a>
+            <a href="shipping_policy.php" class="text-white-50">Chính sách Vận chuyển</a>
           </div>
         </div>
       </div>

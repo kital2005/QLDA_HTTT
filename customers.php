@@ -130,8 +130,8 @@ $search_term = trim($_GET['search'] ?? '');
                 if (!empty($search_term)) {
                     $sql .= " WHERE LOWER(TEN) LIKE ? OR LOWER(EMAIL) LIKE ?";
                     $search_like = '%' . strtolower($search_term) . '%';
-                    $params[] = &$search_like;
-                    $params[] = &$search_like;
+    $params[] = $search_like;
+    $params[] = $search_like;
                     $types .= 'ss';
                 }
 

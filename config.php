@@ -22,3 +22,17 @@ $conn->set_charset("utf8mb4");
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+
+/**
+ * Hàm sửa lỗi tên danh mục không dấu từ CSDL.
+ * @param string $categoryName Tên danh mục gốc.
+ * @return string Tên danh mục đã được sửa.
+ */
+function fix_category_name($categoryName) {
+    $fixes = [
+        'Sac du phong' => 'Sạc dự phòng',
+        'Op lung' => 'Ốp lưng',
+        'Cap sac' => 'Cáp sạc'
+    ];
+    return $fixes[$categoryName] ?? $categoryName;
+}

@@ -10,7 +10,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 $user_id = $_SESSION['user_ma_nd'];
 
 // Lấy tất cả đơn hàng của người dùng hiện tại
-$sql = "SELECT MA_DH, NGAY_DAT_HANG, TONG_TIEN, TRANG_THAI FROM DON_HANG WHERE MA_ND = ? ORDER BY NGAY_DAT_HANG DESC";
+$sql = "SELECT MA_DH, NGAY_DAT_HANG, TONG_TIEN, TRANG_THAI, TRANG_THAI_YEU_CAU FROM DON_HANG WHERE MA_ND = ? ORDER BY NGAY_DAT_HANG DESC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -67,7 +67,7 @@ if ($result_nav_categories) {
                   <li><hr class="dropdown-divider" /></li>
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars(fix_category_name($cat['TEN'])); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
                   <li><hr class="dropdown-divider" /></li>
@@ -114,8 +114,7 @@ if ($result_nav_categories) {
                                     <th>Ngày đặt</th>
                                     <th>Tổng tiền</th>
                                     <th>Trạng thái</th>
-                                    <th></th>
-                                    <th class="text-end">Thao tác</th> <!-- Thêm cột Thao tác -->
+                                    <th class="text-end">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -126,36 +125,41 @@ if ($result_nav_categories) {
                                         <td><?php echo number_format($order['TONG_TIEN'], 0, ',', '.'); ?>₫</td>
                                         <td>
                                             <?php
-                                                $status_text = '';
-                                                $status_class = '';
-                                                switch ($order['TRANG_THAI']) {
-                                                    case 'dang_cho': $status_text = 'Chờ xử lý'; $status_class = 'text-warning'; break;
-                                                    case 'dang_xac_nhan': $status_text = 'Đang xác nhận'; $status_class = 'text-primary'; break;
-                                                    case 'dang_giao': $status_text = 'Đang giao'; $status_class = 'text-info'; break;
-                                                    case 'da_giao': $status_text = 'Đã giao'; $status_class = 'text-success'; break;
-                                                    case 'da_huy': $status_text = 'Đã hủy'; $status_class = 'text-danger'; break;
-                                                    case 'da_tra_hang': $status_text = 'Đã trả hàng'; $status_class = 'text-dark'; break;
-                                                }
-                                                echo '<span class="fw-bold ' . $status_class . '">' . $status_text . '</span>';
+                                                $status_map = [
+                                                    'dang_cho' => ['text' => 'Đang chờ', 'class' => 'secondary'],
+                                                    'dang_xac_nhan' => ['text' => 'Đang xác nhận', 'class' => 'info'],
+                                                    'dang_giao' => ['text' => 'Đang giao', 'class' => 'primary'],
+                                                    'da_giao' => ['text' => 'Đã giao', 'class' => 'success'],
+                                                    'da_huy' => ['text' => 'Đã hủy', 'class' => 'danger'],
+                                                    'da_tra_hang' => ['text' => 'Đã trả hàng', 'class' => 'dark'],
+                                                ];
+                                                $status_info = $status_map[$order['TRANG_THAI']] ?? ['text' => 'Không xác định', 'class' => 'light'];
+                                                echo '<span class="badge bg-' . $status_info['class'] . '">' . $status_info['text'] . '</span>';
                                             ?>
                                         </td>
                                         <td class="text-end">
-                                            <a href="order_status.php?order_id=<?php echo $order['MA_DH']; ?>" class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
-                                        </td>
-                                        <td class="text-end">
-                                            <?php if ($order['TRANG_THAI'] == 'dang_cho'): ?>
-                                                <a href="user_order_actions.php?action=cancel&id=<?php echo $order['MA_DH']; ?>" 
-                                                   class="btn btn-sm btn-danger" 
-                                                   onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
-                                                   <i class="fas fa-times me-1"></i>Hủy đơn
-                                                </a>
-                                            <?php elseif ($order['TRANG_THAI'] == 'dang_giao'): ?>
-                                                <a href="user_order_actions.php?action=request_cancel&id=<?php echo $order['MA_DH']; ?>" 
-                                                   class="btn btn-sm btn-warning"
-                                                   onclick="return confirm('Đơn hàng đang được giao. Bạn có muốn gửi yêu cầu hủy đến quản trị viên không?');">
-                                                   <i class="fas fa-question-circle me-1"></i>Yêu cầu hủy
-                                                </a>
-                                            <?php endif; ?>
+                                            <?php
+                                                // Hiển thị nút "Xem chi tiết"
+                                                if (!in_array($order['TRANG_THAI'], ['da_huy', 'da_tra_hang'])) {
+                                                    echo '<a href="order_status.php?order_id=' . $order['MA_DH'] . '" class="btn btn-outline-primary btn-sm me-2">Xem chi tiết</a>';
+                                                }
+
+                                                $cancellable_statuses = ['dang_cho', 'dang_xac_nhan'];
+                                                $request_cancel_statuses = ['dang_giao'];
+                                                $returnable_statuses = ['da_giao'];
+
+                                                if (in_array($order['TRANG_THAI'], $cancellable_statuses) && $order['TRANG_THAI_YEU_CAU'] == 'khong_co') {
+                                                    echo '<a href="cancel_order.php?order_id=' . $order['MA_DH'] . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Bạn có chắc chắn muốn hủy đơn hàng này?\');">Hủy đơn</a>';
+                                                } elseif (in_array($order['TRANG_THAI'], $request_cancel_statuses) && $order['TRANG_THAI_YEU_CAU'] == 'khong_co') {
+                                                    echo '<button type="button" class="btn btn-warning btn-sm request-action-btn" data-bs-toggle="modal" data-bs-target="#requestActionModal" data-order-id="' . $order['MA_DH'] . '" data-action-type="request_cancel">Yêu cầu hủy</button>';
+                                                } elseif (in_array($order['TRANG_THAI'], $returnable_statuses) && $order['TRANG_THAI_YEU_CAU'] == 'khong_co') {
+                                                    echo '<button type="button" class="btn btn-info btn-sm request-action-btn" data-bs-toggle="modal" data-bs-target="#requestActionModal" data-order-id="' . $order['MA_DH'] . '" data-action-type="request_return">Trả hàng</button>';
+                                                } elseif ($order['TRANG_THAI_YEU_CAU'] == 'cho_huy') {
+                                                    echo '<span class="badge bg-secondary">Đang chờ duyệt hủy</span>';
+                                                } elseif ($order['TRANG_THAI_YEU_CAU'] == 'cho_tra_hang') {
+                                                    echo '<span class="badge bg-secondary">Đang chờ duyệt trả hàng</span>';
+                                                }
+                                            ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -171,6 +175,32 @@ if ($result_nav_categories) {
             </div>
         </div>
     </main>
+
+    <!-- Modal để nhập lý do Hủy/Trả hàng (Copy từ account.php) -->
+    <div class="modal fade" id="requestActionModal" tabindex="-1" aria-labelledby="requestActionModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <form action="request_order_action.php" method="POST">
+            <div class="modal-header">
+              <h5 class="modal-title" id="requestActionModalLabel">Lý do của bạn</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" name="order_id" id="modal_order_id">
+              <input type="hidden" name="action_type" id="modal_action_type">
+              <div class="mb-3">
+                <label for="reason" class="form-label" id="reason_label">Vui lòng cho chúng tôi biết lý do:</label>
+                <textarea class="form-control" id="reason" name="reason" rows="4" required></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+              <button type="submit" class="btn btn-primary">Gửi Yêu Cầu</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <footer class="footer py-5 bg-dark text-white mt-auto">
       <div class="container">
@@ -215,5 +245,30 @@ if ($result_nav_categories) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/script.js"></script>
+    <script>
+        // Script để xử lý modal (Copy từ account.php)
+        document.addEventListener('DOMContentLoaded', function() {
+            const requestModal = document.getElementById('requestActionModal');
+            if (requestModal) {
+                requestModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const orderId = button.getAttribute('data-order-id');
+                    const actionType = button.getAttribute('data-action-type');
+
+                    const modalTitle = requestModal.querySelector('.modal-title');
+                    const reasonLabel = requestModal.querySelector('#reason_label');
+                    
+                    document.getElementById('modal_order_id').value = orderId;
+                    document.getElementById('modal_action_type').value = actionType;
+
+                    if (actionType === 'request_cancel') {
+                        modalTitle.textContent = 'Yêu Cầu Hủy Đơn Hàng #' + orderId;
+                    } else if (actionType === 'request_return') {
+                        modalTitle.textContent = 'Yêu Cầu Trả Hàng cho Đơn Hàng #' + orderId;
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

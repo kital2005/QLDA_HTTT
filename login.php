@@ -92,7 +92,7 @@ if ($result_nav_categories) {
                   
                   <li><h6 class="dropdown-header">Phụ kiện</h6></li>
                   <?php foreach ($accessory_categories_nav as $cat): ?>
-                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars($cat['TEN']); ?></a></li>
+                      <li><a class="dropdown-item" href="sanpham.php?category=<?php echo $cat['MA_DM']; ?>"><i class="fas fa-headphones fa-fw me-2"></i><?php echo htmlspecialchars(fix_category_name($cat['TEN'])); ?></a></li>
                   <?php endforeach; ?>
                   <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
 
@@ -149,12 +149,7 @@ if ($result_nav_categories) {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-md-6">
-            <?php
-              // Bắt đầu session để có thể truy cập các biến session
-              if (session_status() == PHP_SESSION_NONE) {
-                  session_start();
-              }
-
+            <?php              
               // Hiển thị thông báo LỖI nếu có
               if (!empty($_SESSION['error'])) {
                   echo '<div class="alert alert-danger text-center">' . $_SESSION['error'] . '</div>';
@@ -197,14 +192,9 @@ if ($result_nav_categories) {
                         
                       />
                       <button
-                        class="btn position-absolute end-0 top-0"
+                        class="btn position-absolute end-0 top-0 password-toggle-btn d-none"
                         type="button"
-                        id="togglePassword"
-                        style="
-                          border: none;
-                          background: transparent;
-                          z-index: 10;
-                        "
+                        style="border: none; background: transparent; z-index: 10;"
                       >
                         <i class="fas fa-eye"></i>
                       </button>
@@ -269,39 +259,28 @@ if ($result_nav_categories) {
             <h5 class="mb-3">Danh mục</h5>
             <ul class="list-unstyled">
               <li class="mb-2">
-                <a href="#" class="text-white-50">Điện thoại thông minh</a>
+                <a href="sanpham.php?type=phone" class="text-white-50">Điện thoại</a>
               </li>
               <li class="mb-2">
-                <a href="#" class="text-white-50">Máy tính bảng</a>
+                <a href="sanpham.php?type=accessory" class="text-white-50">Phụ kiện</a>
               </li>
-              <li class="mb-2">
-                <a href="#" class="text-white-50">Thiết bị đeo</a>
-              </li>
-              <li class="mb-2">
-                <a href="#" class="text-white-50">Phụ kiện</a>
-              </li>
-              <li class="mb-2"><a href="#" class="text-white-50">Ưu đãi</a></li>
             </ul>
           </div>
           <div class="col-lg-4 col-md-4">
             <h5 class="mb-3">Bản tin</h5>
             <p>Đăng ký để nhận cập nhật về sản phẩm mới và ưu đãi đặc biệt.</p>
-            <form class="mb-3">
+            <form class="mb-3" action="register.php" method="GET">
               <div class="input-group">
                 <input
                   type="email"
                   class="form-control"
                   placeholder="Email của bạn"
+                  name="email"
+                  required
                 />
                 <button class="btn btn-primary" type="submit">Đăng ký</button>
               </div>
             </form>
-            <div class="payment-methods">
-              <i class="fa-brands fa-cc-visa"></i>
-              <i class="fa-brands fa-cc-mastercard"></i>
-              <i class="fa-brands fa-paypal"></i>
-              <i class="fa-brands fa-cc-apple-pay"></i>
-            </div>
           </div>
         </div>
         <hr class="my-4 bg-secondary" />
@@ -312,9 +291,9 @@ if ($result_nav_categories) {
             </p>
           </div>
           <div class="col-md-6 text-center text-md-end">
-            <a href="#" class="text-white-50 me-3">Chính sách Bảo mật</a>
-            <a href="#" class="text-white-50 me-3">Điều khoản Dịch vụ</a>
-            <a href="#" class="text-white-50">Chính sách Vận chuyển</a>
+            <a href="privacy_policy.php" class="text-white-50 me-3">Chính sách Bảo mật</a>
+            <a href="terms_of_service.php" class="text-white-50 me-3">Điều khoản Dịch vụ</a>
+            <a href="shipping_policy.php" class="text-white-50">Chính sách Vận chuyển</a>
           </div>
         </div>
       </div>

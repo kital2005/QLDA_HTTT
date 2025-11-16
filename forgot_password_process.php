@@ -57,7 +57,7 @@ if ($stmt = $conn->prepare($sql)) {
                 $mail->addEmbeddedImage('images/logo-web.png', 'logo_cid');
                 $mail->addEmbeddedImage('images/name-website.png', 'name_web_cid');
 
-                $reset_link = "http://localhost/demo/reset_password.php?token=" . $token;
+                $reset_link = "http://localhost/QLDA_HTTT/reset_password.php?token=" . $token;
                 $mail->isHTML(true);
                 $mail->Subject = 'Yêu Cầu Khôi Phục Mật Khẩu - Tech Phone';
                 

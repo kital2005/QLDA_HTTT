@@ -61,7 +61,7 @@ $orders = $result_orders->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <header class="sticky-top">
       <nav class="navbar navbar-expand-lg">
         <div class="container">
@@ -218,15 +218,30 @@ $orders = $result_orders->fetch_all(MYSQLI_ASSOC);
                             <form action="update_password_process.php" method="POST" class="needs-validation" novalidate>
                                  <div class="mb-3">
                                     <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
-                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                    <div class="position-relative">
+                                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                        <button class="btn position-absolute end-0 top-0 password-toggle-btn d-none" type="button" style="border: none; background: transparent; z-index: 10;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="new_password" class="form-label">Mật khẩu mới</label>
-                                    <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                                    <div class="position-relative">
+                                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                                        <button class="btn position-absolute end-0 top-0 password-toggle-btn d-none" type="button" style="border: none; background: transparent; z-index: 10;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                  <div class="mb-3">
                                     <label for="confirm_new_password" class="form-label">Xác nhận mật khẩu mới</label>
-                                    <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password" required>
+                                    <div class="position-relative">
+                                        <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password" required>
+                                        <button class="btn position-absolute end-0 top-0 password-toggle-btn d-none" type="button" style="border: none; background: transparent; z-index: 10;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Xác nhận đổi mật khẩu</button>
                             </form>
@@ -264,7 +279,7 @@ $orders = $result_orders->fetch_all(MYSQLI_ASSOC);
                                                                 'dang_giao' => ['text' => 'Đang giao', 'class' => 'primary'],
                                                                 'da_giao' => ['text' => 'Đã giao', 'class' => 'success'],
                                                                 'da_huy' => ['text' => 'Đã hủy', 'class' => 'danger'],
-                                                                'da_tra_hang' => ['text' => 'Đã trả hàng', 'class' => 'dark'],
+                                                                'da_tra_hang' => ['text' => 'Đã trả hàng', 'class' => 'dark text-white'],
                                                             ];
                                                             $status_info = $status_map[$order['TRANG_THAI']] ?? ['text' => 'Không xác định', 'class' => 'light'];
                                                             echo '<span class="badge bg-' . $status_info['class'] . '">' . $status_info['text'] . '</span>';
@@ -339,7 +354,7 @@ $orders = $result_orders->fetch_all(MYSQLI_ASSOC);
       </div>
     </div>
 
-    <footer class="footer py-5 bg-dark text-white">
+    <footer class="footer py-5 bg-dark text-white mt-auto">
       <div class="container">
         <div class="row">
           <div class="col-lg-4 mb-4 mb-lg-0">

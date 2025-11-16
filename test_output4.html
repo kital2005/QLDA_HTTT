@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sản phẩm - Tech Phone</title>
+    <link rel="icon" href="images/logo-web.svg" type="image/svg+xml">
+
+    <!-- Libraries -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      /* Di chuyển CSS cho khung viền vào đây */
+      .filter-sidebar {
+        border: 1px solid var(--bs-border-color-translucent);
+        padding: 1.25rem;
+        border-radius: 0.5rem;
+        background-color: var(--bs-tertiary-bg);
+      }
+      /* Áp dụng position: sticky cho cột chứa bộ lọc */
+      .sticky-filter-column {
+        position: -webkit-sticky; /* Tương thích Safari */
+        position: sticky;
+        top: 110px; /* Khoảng cách từ đỉnh, sau khi trừ đi chiều cao header */
+        align-self: flex-start; /* Quan trọng: để sticky hoạt động đúng trong flexbox */
+        /* Thêm thanh cuộn nếu bộ lọc quá dài */
+        max-height: calc(100vh - 130px);
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- GHI CHÚ: Thêm Toast Container để hiển thị thông báo -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
+      <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header">
+              <strong class="me-auto" id="toast-title">Thông báo</strong>
+              <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+          <div class="toast-body" id="toast-body"></div>
+      </div>
+    </div>
+    <header class="sticky-top">
+      <nav class="navbar navbar-expand-lg">        
+        <div class="container">
+          <a href="index.php"><img src="./images/logo-web.png" alt="Tech Phone Logo" class="logo-web"> <img src="./images/name-website.png" alt="Tech Phone" class="logo-web"></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <form class="search-container mx-lg-auto my-2 my-lg-0 d-flex" action="sanpham.php" method="GET">
+              <input class="form-control search-input" type="search" name="search" placeholder="Tìm kiếm sản phẩm..." aria-label="Search" value="">
+              <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
+            </form>
+            <ul class="navbar-nav ms-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="index.php">Trang chủ</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Sản phẩm</a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><h6 class="dropdown-header">Điện thoại</h6></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=1"><i class="fas fa-mobile-alt fa-fw me-2"></i>Apple</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=10"><i class="fas fa-mobile-alt fa-fw me-2"></i>Huawei</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=9"><i class="fas fa-mobile-alt fa-fw me-2"></i>Nubia</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=3"><i class="fas fa-mobile-alt fa-fw me-2"></i>Oppo</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=12"><i class="fas fa-mobile-alt fa-fw me-2"></i>Sam sung</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=13"><i class="fas fa-mobile-alt fa-fw me-2"></i>Vivo</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=4"><i class="fas fa-mobile-alt fa-fw me-2"></i>Xiaomi</a></li>
+                                    <li><a class="dropdown-item" href="sanpham.php?type=phone"><i class="fas fa-mobile-alt fa-fw me-2"></i>Tất cả Điện thoại</a></li>
+                  
+                  <li><hr class="dropdown-divider" /></li>
+                  
+                  <li><h6 class="dropdown-header">Phụ kiện</h6></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=8"><i class="fas fa-headphones fa-fw me-2"></i>Cáp sạc</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=7"><i class="fas fa-headphones fa-fw me-2"></i>Ốp lưng</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=6"><i class="fas fa-headphones fa-fw me-2"></i>Sạc dự phòng</a></li>
+                                        <li><a class="dropdown-item" href="sanpham.php?category=5"><i class="fas fa-headphones fa-fw me-2"></i>Tai nghe</a></li>
+                                    <li><a class="dropdown-item" href="sanpham.php?type=accessory"><i class="fas fa-headphones fa-fw me-2"></i>Tất cả Phụ kiện</a></li>
+
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><a class="dropdown-item" href="sanpham.php"><i class="fas fa-list fa-fw me-2"></i>Xem tất cả sản phẩm</a></li>
+                </ul>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="index.php#features">Tính năng</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="index.php#contact">Liên hệ</a>
+              </li>
+                                <li class="nav-item"><a class="nav-link" href="login.php">Đăng nhập</a></li>
+                  <li class="nav-item"><a class="nav-link" href="register.php">Đăng ký</a></li>
+                          </ul>
+            <div class="ms-3 d-flex align-items-center">
+              <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="fas fa-moon"></i></button>
+              <a href="cart.php" class="btn btn-primary ms-2 position-relative" aria-label="Giỏ hàng"><i class="fas fa-shopping-cart"></i>
+                              </a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="py-5">
+      <div class="container">
+        <div class="row">
+          <!-- Sidebar Bộ lọc (thêm class mới) -->
+          <div class="col-lg-2 sticky-filter-column">
+            <div class="filter-sidebar">
+              <h4 class="mb-4">Bộ lọc sản phẩm</h4>
+              <form action="sanpham.php" method="GET">
+                <!-- Giữ lại các tham số cũ khi submit -->
+                <input type="hidden" name="search" value="">
+                <input type="hidden" name="sort" value="price_asc">
+
+                <!-- Lọc theo Hãng -->
+                <div class="mb-4">
+                  <h5>Hãng sản xuất</h5>
+                  <ul class="list-unstyled filter-list">
+                    <li><a href="?" class="active">Tất cả</a></li>
+                                          <li><a href="?category=1" class="">Apple</a></li>
+                                          <li><a href="?category=8" class="">Cap sac</a></li>
+                                          <li><a href="?category=10" class="">Huawei</a></li>
+                                          <li><a href="?category=9" class="">Nubia</a></li>
+                                          <li><a href="?category=7" class="">Op lung</a></li>
+                                          <li><a href="?category=3" class="">Oppo</a></li>
+                                          <li><a href="?category=6" class="">Sac du phong</a></li>
+                                          <li><a href="?category=12" class="">Sam sung</a></li>
+                                          <li><a href="?category=5" class="">Tai nghe</a></li>
+                                          <li><a href="?category=13" class="">Vivo</a></li>
+                                          <li><a href="?category=4" class="">Xiaomi</a></li>
+                                      </ul>
+                </div>
+
+                <!-- Lọc theo Khoảng giá -->
+                <div class="mb-4">
+                  <h5>Khoảng giá</h5>
+                  <div class="d-flex align-items-center">
+                    <input type="number" name="price_min" class="form-control me-2" placeholder="Từ" value="">
+                    <span>-</span>
+                    <input type="number" name="price_max" class="form-control ms-2" placeholder="Đến" value="">
+                  </div>
+                </div>
+
+                <!-- Lọc theo Tình trạng -->
+                <div class="mb-4" id="conditionFilterContainer">
+                  <h5>Tình trạng</h5>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="condition" id="cond_all" value="all" checked>
+                    <label class="form-check-label" for="cond_all">Tất cả</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="condition" id="cond_new" value="new" >
+                    <label class="form-check-label" for="cond_new">Sản phẩm mới</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="condition" id="cond_old" value="old" >
+                    <label class="form-check-label" for="cond_old">Sản phẩm cũ</label>
+                  </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>Áp dụng</button>
+                  <a href="sanpham.php" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Danh sách sản phẩm (rộng hơn) -->
+          <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h3 class="mb-0">Tất Cả Sản Phẩm</h3>
+              <div class="d-flex align-items-center">
+                <!-- Nút Bộ lọc -->
+                <button class="btn btn-outline-primary me-3" data-bs-toggle="modal" data-bs-target="#filterModal">
+                  <i class="fas fa-filter me-2"></i>Bộ lọc
+                </button>
+                <form action="sanpham.php" method="GET" id="sortForm" class="d-flex align-items-center">
+                   <!-- Các input ẩn để giữ lại bộ lọc khi sắp xếp -->
+                  <input type="hidden" name="search" value="">
+                  <input type="hidden" name="category" value="0">
+                  <input type="hidden" name="condition" value="all">
+                  <input type="hidden" name="price_min" value="">
+                  <input type="hidden" name="price_max" value="">
+                                      <input type="hidden" name="brand[]" value="iPhone">
+                                                        <input type="hidden" name="ram[]" value="8GB">
+                                                                                                            <label for="sort" class="form-label me-2 mb-0">Sắp xếp:</label>
+                  <select name="sort" id="sort" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit();" style="width: auto;">
+                    <option value="newest" >Mới nhất</option>
+                    <option value="price_asc" selected>Giá: Thấp đến Cao</option>
+                    <option value="price_desc" >Giá: Cao đến Thấp</option>
+                    <option value="name_asc" >Tên: A-Z</option>
+                  </select>
+                </form>
+              </div>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+          
+          <div class="col-md-8 mx-auto">
+                        <div class="alert alert-warning text-center p-4 mt-5" role="alert">
+                            <h4 class="alert-heading"><i class="fas fa-search-minus fa-2x mb-3"></i><br>Không tìm thấy sản phẩm</h4>
+                            <p class="lead">Rất tiếc, không có sản phẩm nào phù hợp với tiêu chí của bạn.</p>
+                            <hr>
+                            <p class="mb-0">Vui lòng thử lại với từ khóa hoặc bộ lọc khác, hoặc làm mới lại trang.</p>
+                        </div>
+                      </div>            </div>
+
+            <!-- Pagination -->
+                      </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer py-5 bg-dark text-white mt-auto">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-4 mb-4 mb-lg-0">
+            <a href="index.php"><img src="./images/logo-web.png" alt="Tech Phone Logo" class="logo-web mb-3" style="height: 40px;"> <img src="./images/name-website.png" alt="Tech Phone" class="logo-web mb-3" style="height: 40px;"></a>
+            <p>Cửa hàng một điểm dừng cho các thiết bị di động và phụ kiện mới nhất.</p>
+          </div>
+          <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+            <h5 class="mb-3">Liên kết Nhanh</h5>
+            <ul class="list-unstyled">
+              <li class="mb-2"><a href="index.php" class="text-white-50">Trang chủ</a></li>
+              <li class="mb-2"><a href="sanpham.php" class="text-white-50">Sản phẩm</a></li>
+            </ul>
+          </div>
+          <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+            <h5 class="mb-3">Hỗ trợ</h5>
+            <ul class="list-unstyled">
+              <li class="mb-2"><a href="index.php#contact" class="text-white-50">Liên hệ</a></li>
+              <li class="mb-2"><a href="#" class="text-white-50">FAQ</a></li>
+            </ul>
+          </div>
+          <div class="col-lg-4 col-md-4">
+            <h5 class="mb-3">Bản tin</h5>
+            <p>Đăng ký để nhận cập nhật về sản phẩm mới và ưu đãi đặc biệt.</p>
+            <form><div class="input-group"><input type="email" class="form-control" placeholder="Email của bạn"/><button class="btn btn-primary" type="submit">Đăng ký</button></div></form>
+          </div>
+        </div>
+        <hr class="my-4 bg-secondary" />
+        <div class="row">
+          <div class="col-md-6 text-center text-md-start">
+            <p class="mb-0">&copy; 2025 TP Tech Phone. Tất cả quyền được bảo lưu.</p>
+          </div>
+          <div class="col-md-6 text-center text-md-end">
+            <a href="privacy_policy.php" class="text-white-50 me-3">Chính sách Bảo mật</a>
+            <a href="terms_of_service.php" class="text-white-50 me-3">Điều khoản Dịch vụ</a>
+            <a href="shipping_policy.php" class="text-white-50">Chính sách Vận chuyển</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <a href="#" id="backToTop" class="back-to-top">
+      <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/script.js"></script> 
+        <!-- Modal Bộ lọc nâng cao -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="filterModalLabel"><i class="fas fa-filter me-2"></i>Bộ lọc nâng cao</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form action="sanpham.php" method="GET">
+            <div class="modal-body">
+              <!-- Giữ lại các tham số cũ -->
+              <input type="hidden" name="search" value="">
+              <input type="hidden" name="category" value="0">
+              <input type="hidden" name="condition" value="all">
+              <input type="hidden" name="price_min" value="">
+              <input type="hidden" name="price_max" value="">
+              <input type="hidden" name="sort" value="price_asc">
+
+              <div class="row">
+                <!-- Hãng sản xuất -->
+                <div class="col-12 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-building me-2"></i>Hãng sản xuất</h6>
+                  <div class="row g-2">
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="iPhone" id="brand_iPhone" checked>
+                          <label class="form-check-label w-100" for="brand_iPhone">
+                            <i class="fab fa-apple fa-2x mb-1 d-block"></i>
+                            <small>iPhone</small>
+                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="Samsung" id="brand_Samsung" >
+                          <label class="form-check-label w-100" for="brand_Samsung">
+                            <i class="fas fa-mobile-alt fa-2x mb-1 d-block"></i>
+                            <small>Samsung</small>
+                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="Oppo" id="brand_Oppo" >
+                          <label class="form-check-label w-100" for="brand_Oppo">
+                            <i class="fas fa-mobile-alt fa-2x mb-1 d-block"></i>
+                            <small>Oppo</small>
+                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="Vivo" id="brand_Vivo" >
+                          <label class="form-check-label w-100" for="brand_Vivo">
+                            <i class="fas fa-mobile-alt fa-2x mb-1 d-block"></i>
+                            <small>Vivo</small>
+                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="Xiaomi" id="brand_Xiaomi" >
+                          <label class="form-check-label w-100" for="brand_Xiaomi">
+                            <i class="fas fa-mobile-alt fa-2x mb-1 d-block"></i>
+                            <small>Xiaomi</small>
+                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="Huawei" id="brand_Huawei" >
+                          <label class="form-check-label w-100" for="brand_Huawei">
+                            <i class="fas fa-mobile-alt fa-2x mb-1 d-block"></i>
+                            <small>Huawei</small>
+                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="Nubia" id="brand_Nubia" >
+                          <label class="form-check-label w-100" for="brand_Nubia">
+                            <i class="fas fa-mobile-alt fa-2x mb-1 d-block"></i>
+                            <small>Nubia</small>
+                          </label>
+                        </div>
+                      </div>
+                                      </div>
+                </div>
+
+                <!-- Khoảng giá -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-dollar-sign me-2"></i>Khoảng giá</h6>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="price_range[]" value="0" id="price_0" >
+                      <label class="form-check-label" for="price_0">
+                        7 - 13 triệu                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="price_range[]" value="1" id="price_1" >
+                      <label class="form-check-label" for="price_1">
+                        13 - 20 triệu                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="price_range[]" value="2" id="price_2" >
+                      <label class="form-check-label" for="price_2">
+                        Trên 20 triệu                      </label>
+                    </div>
+                                  </div>
+
+                <!-- RAM -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-memory me-2"></i>RAM</h6>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="4GB" id="ram_4" >
+                      <label class="form-check-label" for="ram_4">
+                        4GB                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="6GB" id="ram_6" >
+                      <label class="form-check-label" for="ram_6">
+                        6GB                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="8GB" id="ram_8" checked>
+                      <label class="form-check-label" for="ram_8">
+                        8GB                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="10GB" id="ram_10" >
+                      <label class="form-check-label" for="ram_10">
+                        10GB                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="12GB" id="ram_12" >
+                      <label class="form-check-label" for="ram_12">
+                        12GB                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="16GB" id="ram_16" >
+                      <label class="form-check-label" for="ram_16">
+                        16GB                      </label>
+                    </div>
+                                  </div>
+
+                <!-- Độ phân giải -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-tv me-2"></i>Độ phân giải màn hình</h6>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="resolution[]" value="HD+" id="res_HD" >
+                      <label class="form-check-label" for="res_HD">
+                        HD+                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="resolution[]" value="Full HD+" id="res_Full_HD" >
+                      <label class="form-check-label" for="res_Full_HD">
+                        Full HD+                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="resolution[]" value="2K" id="res_2K" >
+                      <label class="form-check-label" for="res_2K">
+                        2K                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="resolution[]" value="4K" id="res_4K" >
+                      <label class="form-check-label" for="res_4K">
+                        4K                      </label>
+                    </div>
+                                  </div>
+
+                <!-- Tần số quét -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-tachometer-alt me-2"></i>Tần số quét</h6>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="refresh_rate[]" value="60Hz" id="rate_60" >
+                      <label class="form-check-label" for="rate_60">
+                        60Hz                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="refresh_rate[]" value="90Hz" id="rate_90" >
+                      <label class="form-check-label" for="rate_90">
+                        90Hz                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="refresh_rate[]" value="120Hz" id="rate_120" >
+                      <label class="form-check-label" for="rate_120">
+                        120Hz                      </label>
+                    </div>
+                                      <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="refresh_rate[]" value="144Hz" id="rate_144" >
+                      <label class="form-check-label" for="rate_144">
+                        144Hz                      </label>
+                    </div>
+                                  </div>
+
+                <!-- Dung lượng lưu trữ -->
+                <div class="col-12 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-hdd me-2"></i>Dung lượng lưu trữ</h6>
+                  <div class="row g-2">
+                                          <div class="col-6 col-md-4 col-lg-2">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="storage[]" value="64GB" id="storage_64" >
+                          <label class="form-check-label w-100" for="storage_64">
+                            64GB                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-2">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="storage[]" value="128GB" id="storage_128" >
+                          <label class="form-check-label w-100" for="storage_128">
+                            128GB                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-2">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="storage[]" value="256GB" id="storage_256" >
+                          <label class="form-check-label w-100" for="storage_256">
+                            256GB                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-2">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="storage[]" value="512GB" id="storage_512" >
+                          <label class="form-check-label w-100" for="storage_512">
+                            512GB                          </label>
+                        </div>
+                      </div>
+                                          <div class="col-6 col-md-4 col-lg-2">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="storage[]" value="1TB" id="storage_1TB" >
+                          <label class="form-check-label w-100" for="storage_1TB">
+                            1TB                          </label>
+                        </div>
+                      </div>
+                                      </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>Áp dụng bộ lọc</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const categorySelect = document.querySelector('select[name="category"]');
+            const conditionFilterContainer = document.getElementById('conditionFilterContainer');
+            const conditionSelect = document.querySelector('select[name="condition"]');
+
+            // Các ID danh mục phụ kiện (cần khớp với PHP)
+            const accessoryCategoryIds = [5, 6, 7, 8]; 
+
+            function toggleConditionFilter() {
+                const selectedCategoryId = parseInt(categorySelect.value);
+                if (accessoryCategoryIds.includes(selectedCategoryId)) {
+                    conditionFilterContainer.style.display = 'none';
+                    // Đặt giá trị mặc định cho tình trạng là 'new' khi ẩn đi
+                    conditionSelect.value = 'new'; 
+                } else {
+                    conditionFilterContainer.style.display = 'block';
+                }
+            }
+
+            // Gọi hàm khi trang tải và khi danh mục thay đổi
+            toggleConditionFilter();
+            categorySelect.addEventListener('change', toggleConditionFilter);
+        });
+    </script>
+  </body>
+</html>

@@ -11,6 +11,14 @@ $price_min = isset($_GET['price_min']) && is_numeric($_GET['price_min']) ? (int)
 $price_max = isset($_GET['price_max']) && is_numeric($_GET['price_max']) ? (int)$_GET['price_max'] : null;
 $rating_filter = isset($_GET['rating']) && is_numeric($_GET['rating']) ? (int)$_GET['rating'] : 0;
 
+// Bộ lọc mới từ modal (arrays for multiple selections)
+$brand_filters = isset($_GET['brand']) ? (array)$_GET['brand'] : [];
+$ram_filters = isset($_GET['ram']) ? (array)$_GET['ram'] : [];
+$resolution_filters = isset($_GET['resolution']) ? (array)$_GET['resolution'] : [];
+$refresh_rate_filters = isset($_GET['refresh_rate']) ? (array)$_GET['refresh_rate'] : [];
+$storage_filters = isset($_GET['storage']) ? (array)$_GET['storage'] : [];
+$price_range_filters = isset($_GET['price_range']) ? (array)$_GET['price_range'] : [];
+
 // --- DANH SÁCH ID PHỤ KIỆN ĐƯỢC ĐỊNH NGHĨA CỨNG ---
 $accessory_category_ids = [5, 6, 7, 8]; // Giữ cho nhất quán với các file khác
 
@@ -101,6 +109,79 @@ if ($rating_filter > 0) {
     $types .= 'i';
 }
 
+// Bộ lọc mới dựa trên CHI_TIET_KY_THUAT (multiple selections)
+if (!empty($brand_filters)) {
+    $conditions = [];
+    foreach ($brand_filters as $brand) {
+        $conditions[] = "LOWER(CAST(CHI_TIET_KY_THUAT AS CHAR)) LIKE ?";
+        $params[] = '%' . strtolower($brand) . '%';
+        $types .= 's';
+    }
+    $sql_base .= " AND (" . implode(' OR ', $conditions) . ")";
+}
+if (!empty($ram_filters)) {
+    $conditions = [];
+    foreach ($ram_filters as $ram) {
+        $conditions[] = "LOWER(CAST(CHI_TIET_KY_THUAT AS CHAR)) LIKE ?";
+        $params[] = '%' . strtolower($ram) . '%';
+        $types .= 's';
+    }
+    $sql_base .= " AND (" . implode(' OR ', $conditions) . ")";
+}
+if (!empty($resolution_filters)) {
+    $conditions = [];
+    foreach ($resolution_filters as $resolution) {
+        $conditions[] = "LOWER(CAST(CHI_TIET_KY_THUAT AS CHAR)) LIKE ?";
+        $params[] = '%' . strtolower($resolution) . '%';
+        $types .= 's';
+    }
+    $sql_base .= " AND (" . implode(' OR ', $conditions) . ")";
+}
+if (!empty($refresh_rate_filters)) {
+    $conditions = [];
+    foreach ($refresh_rate_filters as $rate) {
+        $conditions[] = "LOWER(CAST(CHI_TIET_KY_THUAT AS CHAR)) LIKE ?";
+        $params[] = '%' . strtolower($rate) . '%';
+        $types .= 's';
+    }
+    $sql_base .= " AND (" . implode(' OR ', $conditions) . ")";
+}
+if (!empty($storage_filters)) {
+    $conditions = [];
+    foreach ($storage_filters as $storage) {
+        $conditions[] = "LOWER(CAST(CHI_TIET_KY_THUAT AS CHAR)) LIKE ?";
+        $params[] = '%' . strtolower($storage) . '%';
+        $types .= 's';
+    }
+    $sql_base .= " AND (" . implode(' OR ', $conditions) . ")";
+}
+if (!empty($price_range_filters)) {
+    $price_ranges = [
+        ['min' => 7000000, 'max' => 13000000],
+        ['min' => 13000000, 'max' => 20000000],
+        ['min' => 20000000, 'max' => null]
+    ];
+    $conditions = [];
+    foreach ($price_range_filters as $index) {
+        if (isset($price_ranges[$index])) {
+            $range = $price_ranges[$index];
+            if ($range['max'] !== null) {
+                $conditions[] = "(GIA_BAN >= ? AND GIA_BAN <= ?)";
+                $params[] = $range['min'];
+                $params[] = $range['max'];
+                $types .= 'ii';
+            } else {
+                $conditions[] = "GIA_BAN >= ?";
+                $params[] = $range['min'];
+                $types .= 'i';
+            }
+        }
+    }
+    if (!empty($conditions)) {
+        $sql_base .= " AND (" . implode(' OR ', $conditions) . ")";
+    }
+}
+
 // --- PHÂN TRANG ---
 $products_per_page = 12;
 $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -159,23 +240,7 @@ $types .= 'ii';
     />
     <link rel="stylesheet" href="css/style.css" />
     <style>
-      /* Di chuyển CSS cho khung viền vào đây */
-      .filter-sidebar {
-        border: 1px solid var(--bs-border-color-translucent);
-        padding: 1.25rem;
-        border-radius: 0.5rem;
-        background-color: var(--bs-tertiary-bg);
-      }
-      /* Áp dụng position: sticky cho cột chứa bộ lọc */
-      .sticky-filter-column {
-        position: -webkit-sticky; /* Tương thích Safari */
-        position: sticky;
-        top: 110px; /* Khoảng cách từ đỉnh, sau khi trừ đi chiều cao header */
-        align-self: flex-start; /* Quan trọng: để sticky hoạt động đúng trong flexbox */
-        /* Thêm thanh cuộn nếu bộ lọc quá dài */
-        max-height: calc(100vh - 130px);
-        overflow-y: auto;
-      }
+      /* CSS cho modal bộ lọc nếu cần */
     </style>
   </head>
   <body>
@@ -270,80 +335,49 @@ $types .= 'ii';
     <main class="py-5">
       <div class="container">
         <div class="row">
-          <!-- Sidebar Bộ lọc (thêm class mới) -->
-          <div class="col-lg-2 sticky-filter-column">
-            <div class="filter-sidebar">
-              <h4 class="mb-4">Bộ lọc sản phẩm</h4>
-              <form action="sanpham.php" method="GET">
-                <!-- Giữ lại các tham số cũ khi submit -->
-                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
-                <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort_order); ?>">
-
-                <!-- Lọc theo Hãng -->
-                <div class="mb-4">
-                  <h5>Hãng sản xuất</h5>
-                  <ul class="list-unstyled filter-list">
-                    <li><a href="?" class="<?php if ($category_id == 0) echo 'active'; ?>">Tất cả</a></li>
-                    <?php foreach ($categories as $category): ?>
-                      <li><a href="?category=<?php echo $category['MA_DM']; ?>" class="<?php if ($category_id == $category['MA_DM']) echo 'active'; ?>"><?php echo htmlspecialchars($category['TEN']); ?></a></li>
-                    <?php endforeach; ?>
-                  </ul>
-                </div>
-
-                <!-- Lọc theo Khoảng giá -->
-                <div class="mb-4">
-                  <h5>Khoảng giá</h5>
-                  <div class="d-flex align-items-center">
-                    <input type="number" name="price_min" class="form-control me-2" placeholder="Từ" value="<?php echo htmlspecialchars($price_min ?? ''); ?>">
-                    <span>-</span>
-                    <input type="number" name="price_max" class="form-control ms-2" placeholder="Đến" value="<?php echo htmlspecialchars($price_max ?? ''); ?>">
-                  </div>
-                </div>
-
-                <!-- Lọc theo Tình trạng -->
-                <div class="mb-4" id="conditionFilterContainer">
-                  <h5>Tình trạng</h5>
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="condition" id="cond_all" value="all" <?php if ($condition == 'all') echo 'checked'; ?>>
-                    <label class="form-check-label" for="cond_all">Tất cả</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="condition" id="cond_new" value="new" <?php if ($condition == 'new') echo 'checked'; ?>>
-                    <label class="form-check-label" for="cond_new">Sản phẩm mới</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="condition" id="cond_old" value="old" <?php if ($condition == 'old') echo 'checked'; ?>>
-                    <label class="form-check-label" for="cond_old">Sản phẩm cũ</label>
-                  </div>
-                </div>
-
-                <div class="d-grid gap-2">
-                  <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>Áp dụng</button>
-                  <a href="sanpham.php" class="btn btn-outline-secondary">Xóa bộ lọc</a>
-                </div>
-              </form>
-            </div>
-          </div>
-
           <!-- Danh sách sản phẩm (rộng hơn) -->
-          <div class="col-lg-10">
+          <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
               <h3 class="mb-0">Tất Cả Sản Phẩm</h3>
-              <form action="sanpham.php" method="GET" id="sortForm" class="d-flex align-items-center">
-                 <!-- Các input ẩn để giữ lại bộ lọc khi sắp xếp -->
-                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
-                <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_id); ?>">
-                <input type="hidden" name="condition" value="<?php echo htmlspecialchars($condition); ?>">
-                <input type="hidden" name="price_min" value="<?php echo htmlspecialchars($price_min ?? ''); ?>">
-                <input type="hidden" name="price_max" value="<?php echo htmlspecialchars($price_max ?? ''); ?>">
-                <label for="sort" class="form-label me-2 mb-0">Sắp xếp:</label>
-                <select name="sort" id="sort" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit();" style="width: auto;">
-                  <option value="newest" <?php if ($sort_order == 'newest') echo 'selected'; ?>>Mới nhất</option>
-                  <option value="price_asc" <?php if ($sort_order == 'price_asc') echo 'selected'; ?>>Giá: Thấp đến Cao</option>
-                  <option value="price_desc" <?php if ($sort_order == 'price_desc') echo 'selected'; ?>>Giá: Cao đến Thấp</option>
-                  <option value="name_asc" <?php if ($sort_order == 'name_asc') echo 'selected'; ?>>Tên: A-Z</option>
-                </select>
-              </form>
+              <div class="d-flex align-items-center">
+                <!-- Nút Bộ lọc -->
+                <button class="btn btn-outline-primary me-3" data-bs-toggle="modal" data-bs-target="#filterModal">
+                  <i class="fas fa-filter me-2"></i>Bộ lọc
+                </button>
+                <form action="sanpham.php" method="GET" id="sortForm" class="d-flex align-items-center">
+                   <!-- Các input ẩn để giữ lại bộ lọc khi sắp xếp -->
+                  <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
+                  <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_id); ?>">
+                  <input type="hidden" name="condition" value="<?php echo htmlspecialchars($condition); ?>">
+                  <input type="hidden" name="price_min" value="<?php echo htmlspecialchars($price_min ?? ''); ?>">
+                  <input type="hidden" name="price_max" value="<?php echo htmlspecialchars($price_max ?? ''); ?>">
+                  <?php if (!empty($brand_filters)): foreach ($brand_filters as $brand): ?>
+                    <input type="hidden" name="brand[]" value="<?php echo htmlspecialchars($brand); ?>">
+                  <?php endforeach; endif; ?>
+                  <?php if (!empty($ram_filters)): foreach ($ram_filters as $ram): ?>
+                    <input type="hidden" name="ram[]" value="<?php echo htmlspecialchars($ram); ?>">
+                  <?php endforeach; endif; ?>
+                  <?php if (!empty($resolution_filters)): foreach ($resolution_filters as $resolution): ?>
+                    <input type="hidden" name="resolution[]" value="<?php echo htmlspecialchars($resolution); ?>">
+                  <?php endforeach; endif; ?>
+                  <?php if (!empty($refresh_rate_filters)): foreach ($refresh_rate_filters as $rate): ?>
+                    <input type="hidden" name="refresh_rate[]" value="<?php echo htmlspecialchars($rate); ?>">
+                  <?php endforeach; endif; ?>
+                  <?php if (!empty($storage_filters)): foreach ($storage_filters as $storage): ?>
+                    <input type="hidden" name="storage[]" value="<?php echo htmlspecialchars($storage); ?>">
+                  <?php endforeach; endif; ?>
+                  <?php if (!empty($price_range_filters)): foreach ($price_range_filters as $range): ?>
+                    <input type="hidden" name="price_range[]" value="<?php echo htmlspecialchars($range); ?>">
+                  <?php endforeach; endif; ?>
+                  <label for="sort" class="form-label me-2 mb-0">Sắp xếp:</label>
+                  <select name="sort" id="sort" class="form-select form-select-sm" onchange="document.getElementById('sortForm').submit();" style="width: auto;">
+                    <option value="newest" <?php if ($sort_order == 'newest') echo 'selected'; ?>>Mới nhất</option>
+                    <option value="price_asc" <?php if ($sort_order == 'price_asc') echo 'selected'; ?>>Giá: Thấp đến Cao</option>
+                    <option value="price_desc" <?php if ($sort_order == 'price_desc') echo 'selected'; ?>>Giá: Cao đến Thấp</option>
+                    <option value="name_asc" <?php if ($sort_order == 'name_asc') echo 'selected'; ?>>Tên: A-Z</option>
+                  </select>
+                </form>
+              </div>
             </div>
 
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
@@ -534,30 +568,153 @@ $types .= 'ii';
           unset($_SESSION['message_type']);
       }
     ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const categorySelect = document.querySelector('select[name="category"]');
-            const conditionFilterContainer = document.getElementById('conditionFilterContainer');
-            const conditionSelect = document.querySelector('select[name="condition"]');
+    <!-- Modal Bộ lọc nâng cao -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="filterModalLabel"><i class="fas fa-filter me-2"></i>Bộ lọc nâng cao</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form action="sanpham.php" method="GET">
+            <div class="modal-body">
+              <!-- Giữ lại các tham số cũ -->
+              <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
+              <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_id); ?>">
+              <input type="hidden" name="condition" value="<?php echo htmlspecialchars($condition); ?>">
+              <input type="hidden" name="price_min" value="<?php echo htmlspecialchars($price_min ?? ''); ?>">
+              <input type="hidden" name="price_max" value="<?php echo htmlspecialchars($price_max ?? ''); ?>">
+              <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort_order); ?>">
 
-            // Các ID danh mục phụ kiện (cần khớp với PHP)
-            const accessoryCategoryIds = [5, 6, 7, 8]; 
+              <div class="row">
+                <!-- Hãng sản xuất -->
+                <div class="col-12 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-building me-2"></i>Hãng sản xuất</h6>
+                  <div class="row g-2">
+                    <?php
+                    $brands = [
+                      ['name' => 'iPhone', 'icon' => 'fab fa-apple', 'value' => 'Apple'],
+                      ['name' => 'Samsung', 'icon' => 'fas fa-mobile-alt', 'value' => 'Sam sung'],
+                      ['name' => 'Oppo', 'icon' => 'fas fa-mobile-alt', 'value' => 'Oppo'],
+                      ['name' => 'Vivo', 'icon' => 'fas fa-mobile-alt', 'value' => 'Vivo'],
+                      ['name' => 'Xiaomi', 'icon' => 'fas fa-mobile-alt', 'value' => 'Xiaomi'],
+                      ['name' => 'Huawei', 'icon' => 'fas fa-mobile-alt', 'value' => 'Huawei'],
+                      ['name' => 'Nubia', 'icon' => 'fas fa-mobile-alt', 'value' => 'Nubia']
+                    ];
+                    $selected_brands = isset($_GET['brand']) ? (array)$_GET['brand'] : [];
+                    foreach ($brands as $brand): ?>
+                      <div class="col-6 col-md-4 col-lg-3">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="brand[]" value="<?php echo htmlspecialchars($brand['value']); ?>" id="brand_<?php echo $brand['value']; ?>" <?php if (in_array($brand['value'], $selected_brands)) echo 'checked'; ?>>
+                          <label class="form-check-label w-100" for="brand_<?php echo $brand['value']; ?>">
+                            <i class="<?php echo $brand['icon']; ?> fa-2x mb-1 d-block"></i>
+                            <small><?php echo htmlspecialchars($brand['name']); ?></small>
+                          </label>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
 
-            function toggleConditionFilter() {
-                const selectedCategoryId = parseInt(categorySelect.value);
-                if (accessoryCategoryIds.includes(selectedCategoryId)) {
-                    conditionFilterContainer.style.display = 'none';
-                    // Đặt giá trị mặc định cho tình trạng là 'new' khi ẩn đi
-                    conditionSelect.value = 'new'; 
-                } else {
-                    conditionFilterContainer.style.display = 'block';
-                }
-            }
+                <!-- Khoảng giá -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-dollar-sign me-2"></i>Khoảng giá</h6>
+                  <?php
+                  $price_ranges = [
+                    ['label' => '7 - 13 triệu', 'min' => 7000000, 'max' => 13000000],
+                    ['label' => '13 - 20 triệu', 'min' => 13000000, 'max' => 20000000],
+                    ['label' => 'Trên 20 triệu', 'min' => 20000000, 'max' => null]
+                  ];
+                  $selected_prices = isset($_GET['price_range']) ? (array)$_GET['price_range'] : [];
+                  foreach ($price_ranges as $index => $range): ?>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="price_range[]" value="<?php echo $index; ?>" id="price_<?php echo $index; ?>" <?php if (in_array($index, $selected_prices)) echo 'checked'; ?>>
+                      <label class="form-check-label" for="price_<?php echo $index; ?>">
+                        <?php echo htmlspecialchars($range['label']); ?>
+                      </label>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
 
-            // Gọi hàm khi trang tải và khi danh mục thay đổi
-            toggleConditionFilter();
-            categorySelect.addEventListener('change', toggleConditionFilter);
-        });
-    </script>
+                <!-- RAM -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-memory me-2"></i>RAM</h6>
+                  <?php
+                  $rams = ['4GB', '6GB', '8GB', '10GB', '12GB', '16GB'];
+                  $selected_rams = isset($_GET['ram']) ? (array)$_GET['ram'] : [];
+                  foreach ($rams as $ram): ?>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="ram[]" value="<?php echo htmlspecialchars($ram); ?>" id="ram_<?php echo str_replace('GB', '', $ram); ?>" <?php if (in_array($ram, $selected_rams)) echo 'checked'; ?>>
+                      <label class="form-check-label" for="ram_<?php echo str_replace('GB', '', $ram); ?>">
+                        <?php echo htmlspecialchars($ram); ?>
+                      </label>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+
+                <!-- Độ phân giải -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-tv me-2"></i>Độ phân giải màn hình</h6>
+                  <?php
+                  $resolutions = ['HD+', 'Full HD+', '2K', '4K'];
+                  $selected_resolutions = isset($_GET['resolution']) ? (array)$_GET['resolution'] : [];
+                  foreach ($resolutions as $res): ?>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="resolution[]" value="<?php echo htmlspecialchars($res); ?>" id="res_<?php echo str_replace(['+', ' '], ['', '_'], $res); ?>" <?php if (in_array($res, $selected_resolutions)) echo 'checked'; ?>>
+                      <label class="form-check-label" for="res_<?php echo str_replace(['+', ' '], ['', '_'], $res); ?>">
+                        <?php echo htmlspecialchars($res); ?>
+                      </label>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+
+                <!-- Tần số quét -->
+                <div class="col-md-6 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-tachometer-alt me-2"></i>Tần số quét</h6>
+                  <?php
+                  $refresh_rates = ['60Hz', '90Hz', '120Hz', '144Hz'];
+                  $selected_refresh = isset($_GET['refresh_rate']) ? (array)$_GET['refresh_rate'] : [];
+                  foreach ($refresh_rates as $rate): ?>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="checkbox" name="refresh_rate[]" value="<?php echo htmlspecialchars($rate); ?>" id="rate_<?php echo str_replace('Hz', '', $rate); ?>" <?php if (in_array($rate, $selected_refresh)) echo 'checked'; ?>>
+                      <label class="form-check-label" for="rate_<?php echo str_replace('Hz', '', $rate); ?>">
+                        <?php echo htmlspecialchars($rate); ?>
+                      </label>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+
+                <!-- Dung lượng lưu trữ -->
+                <div class="col-12 mb-4">
+                  <h6 class="fw-bold mb-3"><i class="fas fa-hdd me-2"></i>Dung lượng lưu trữ</h6>
+                  <div class="row g-2">
+                    <?php
+                    $storages = ['64GB', '128GB', '256GB', '512GB', '1TB'];
+                    $selected_storages = isset($_GET['storage']) ? (array)$_GET['storage'] : [];
+                    foreach ($storages as $storage): ?>
+                      <div class="col-6 col-md-4 col-lg-2">
+                        <div class="form-check border rounded p-2 text-center">
+                          <input class="form-check-input" type="checkbox" name="storage[]" value="<?php echo htmlspecialchars($storage); ?>" id="storage_<?php echo str_replace(['GB', 'TB'], ['', 'TB'], $storage); ?>" <?php if (in_array($storage, $selected_storages)) echo 'checked'; ?>>
+                          <label class="form-check-label w-100" for="storage_<?php echo str_replace(['GB', 'TB'], ['', 'TB'], $storage); ?>">
+                            <?php echo htmlspecialchars($storage); ?>
+                          </label>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-danger" onclick="window.location.href='sanpham.php'"><i class="fas fa-trash me-2"></i>Xóa bộ lọc</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>Áp dụng bộ lọc</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
   </body>
 </html>

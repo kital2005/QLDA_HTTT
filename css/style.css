@@ -664,3 +664,120 @@ header.header-hidden {
 }
 
 /*# sourceMappingURL=style.css.map */
+
+/* ===================================================================
+Responsive Design - Bổ sung để tương thích tốt hơn
+====================================================================== */
+
+/* Laptop nhỏ & Máy tính bảng ngang (từ 992px đến 1200px) */
+@media (max-width: 1199.98px) {
+    .hero-section .hero-content h1 {
+        font-size: 2.8rem;
+    }
+    .search-container:hover .search-input {
+        width: 150px; /* Giảm chiều rộng ô tìm kiếm một chút */
+    }
+}
+
+/* Máy tính bảng đứng (từ 768px đến 991px) */
+@media (max-width: 991.98px) {
+    .navbar-nav {
+        margin-top: 1rem; /* Thêm khoảng cách khi menu thu gọn */
+    }
+    .search-container {
+        margin: 0.5rem 0; /* Chuyển search bar xuống dưới logo */
+        justify-content: center;
+    }
+    .search-container .search-input,
+    .search-container:hover .search-input {
+        width: 100%; /* Cho phép ô tìm kiếm rộng hết cỡ */
+        opacity: 1;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+    }
+    .hero-section {
+        padding: 4rem 0;
+        text-align: center;
+    }
+    .hero-section .hero-content {
+        margin-bottom: 2rem;
+    }
+    .hero-image {
+        display: none; /* Ẩn ảnh lớn trên tablet để tập trung vào nội dung */
+    }
+    .footer .col-lg-2, .footer .col-lg-4 {
+        margin-bottom: 2rem;
+    }
+}
+
+/* Điện thoại di động (dưới 767.98px) */
+@media (max-width: 767.98px) {
+    body {
+        font-size: 15px;
+    }
+    .logo-web {
+        height: 50px;
+        width: 120px;
+    }
+    .hero-section {
+        padding: 3rem 0;
+    }
+    .hero-section .hero-content h1 {
+        font-size: 2rem;
+    }
+    .hero-section .hero-content p {
+        font-size: 1rem;
+    }
+    .products-section .row > [class*="col-"] {
+        flex: 0 0 50%; /* Hiển thị 2 sản phẩm mỗi hàng */
+        max-width: 50%;
+    }
+    .features-section .col-md-6 {
+        flex: 0 0 100%; /* 1 tính năng mỗi hàng */
+        max-width: 100%;
+    }
+    .countdown-timer {
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    .countdown-timer div {
+        padding: 0.5rem;
+        min-width: 60px;
+    }
+    .countdown-timer div span {
+        font-size: 1.5rem;
+    }
+    .footer {
+        text-align: center;
+    }
+    .footer .text-md-end {
+        text-align: center !important;
+        margin-top: 1rem;
+    }
+}
+
+/* Điện thoại di động nhỏ (dưới 575.98px) */
+@media (max-width: 575.98px) {
+    .navbar-brand img.logo-web:last-child {
+        display: none; /* Ẩn tên website dạng ảnh, chỉ giữ lại logo */
+    }
+    .hero-section .hero-content h1 {
+        font-size: 1.8rem;
+    }
+    .products-section .row > [class*="col-"],
+    .testimonials-section .row > [class*="col-"] {
+        flex: 0 0 100%; /* 1 sản phẩm/đánh giá mỗi hàng */
+        max-width: 100%;
+    }
+    .product-card .card-img-top {
+        height: 200px;
+    }
+    .cta-section .display-6 {
+        font-size: 1.75rem;
+    }
+    .flash-sale-title {
+        font-size: 2.5rem;
+    }
+}
+

@@ -57,12 +57,12 @@ $conn->close();
         <strong>Điện thoại:</strong> <?php echo htmlspecialchars($order['SDT_KHACH_HANG']); ?><br>
         <strong>Địa chỉ:</strong> <?php echo htmlspecialchars($order['DIA_CHI_GIAO_HANG']); ?>
     </div>
-    <?php if (!empty($order['GHI_CHU'])): ?>
-    <div class="col-12 mt-2">
-        <strong>Ghi chú:</strong> <?php echo htmlspecialchars($order['GHI_CHU']); ?>
-    </div>
-    <?php endif; ?>
 </div>
+<?php if (!empty($order['GHI_CHU'])): ?>
+<div class="alert alert-info mt-3" role="alert">
+    <i class="fas fa-info-circle me-2"></i><strong>Ghi chú của khách hàng:</strong> <?php echo htmlspecialchars($order['GHI_CHU']); ?>
+</div>
+<?php endif; ?>
 
 <h6 class="mt-4">Các sản phẩm trong đơn hàng</h6>
 <ul class="list-group">

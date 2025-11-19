@@ -18,14 +18,27 @@ if (empty($cart_to_process)) {
     exit;
 }
 
-// 2. Lấy thông tin từ form POST
-$customer_name = trim($_POST['name'] ?? '');
-$customer_email = trim($_POST['email'] ?? '');
-$customer_phone = trim($_POST['phone'] ?? '');
-$customer_address = trim($_POST['address'] ?? '');
-$notes = trim($_POST['notes'] ?? '');
+// 2. Lấy thông tin từ form POST và session
 $payment_method = trim($_POST['payment_method'] ?? 'cod');
 $user_id = $_SESSION['user_ma_nd'] ?? null;
+
+// --- SỬA LỖI 2: LẤY THÔNG TIN TỪ SESSION CHO ĐƠN HÀNG CHUYỂN KHOẢN ---
+if ($payment_method === 'bank_transfer' && isset($_SESSION['temp_order_data'])) {
+    // Nếu là đơn chuyển khoản, lấy thông tin đã lưu tạm trong session
+    $customer_name = $_SESSION['temp_order_data']['name'] ?? '';
+    $customer_phone = $_SESSION['temp_order_data']['phone'] ?? '';
+    $customer_address = $_SESSION['temp_order_data']['address'] ?? '';
+    $notes = $_SESSION['temp_order_data']['notes'] ?? '';
+    // Email có thể lấy từ session người dùng nếu cần
+    $customer_email = $_SESSION['user_email'] ?? ''; 
+} else {
+    // Nếu là đơn COD (hoặc fallback), lấy thông tin trực tiếp từ POST
+    $customer_name = trim($_POST['name'] ?? '');
+    $customer_email = trim($_POST['email'] ?? '');
+    $customer_phone = trim($_POST['phone'] ?? '');
+    $customer_address = trim($_POST['address'] ?? '');
+    $notes = trim($_POST['notes'] ?? '');
+}
 
 // --- TÍNH TOÁN LẠI TỔNG TIỀN (ĐỂ ĐẢM BẢO AN TOÀN) ---
 $total_amount = 0;
@@ -103,6 +116,10 @@ try {
         unset($_SESSION['buy_now_cart']); // Xóa giỏ hàng "Mua ngay"
     } else {
         unset($_SESSION['cart']); // Xóa giỏ hàng chính
+    }
+    // Xóa dữ liệu đơn hàng tạm thời nếu có
+    if (isset($_SESSION['temp_order_data'])) {
+        unset($_SESSION['temp_order_data']);
     }
     header("Location: order_status.php?order_id=" . $order_id);
     exit;

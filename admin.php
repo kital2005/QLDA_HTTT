@@ -47,14 +47,17 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
         transform: translateY(-5px);
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
       }
-      .admin-card i {
-        font-size: 3rem;
+      .admin-card .admin-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 1.5rem;
+        background: rgba(13, 110, 253, 0.1);
+        border-radius: 50%;
+        font-size: 2rem;
         color: #0d6efd;
-        margin-bottom: 1rem;
-      }
-      .admin-card h3 {
-        font-weight: 600;
-        margin-bottom: 1rem;
       }
       .admin-card p {
         color: #6c757d;
@@ -124,7 +127,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
           <!-- Quản lý sản phẩm -->
           <div class="col-md-6 col-lg-4">
             <div class="admin-card">
-              <i class="fas fa-box"></i>
+              <div class="admin-icon">
+                <i class="fas fa-box"></i>
+              </div>
               <h3>Quản lý sản phẩm</h3>
               <p>Thêm, sửa, xóa và quản lý danh sách các sản phẩm.</p>
               <a href="products.php" class="btn btn-primary">Truy cập ngay</a>
@@ -133,7 +138,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
           <!-- Quản lý hãng sản phẩm -->
           <div class="col-md-6 col-lg-4">
             <div class="admin-card">
-              <i class="fas fa-building"></i>
+              <div class="admin-icon">
+                <i class="fas fa-building"></i>
+              </div>
               <h3>Quản lý hãng sản phẩm</h3>
               <p>Quản lý các hãng sản xuất và thương hiệu sản phẩm.</p>
               <a href="categories.php" class="btn btn-primary">Truy cập ngay</a>
@@ -142,7 +149,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
           <!-- Quản lý đơn hàng -->
           <div class="col-md-6 col-lg-4">
             <div class="admin-card">
-              <i class="fas fa-shopping-cart"></i>
+              <div class="admin-icon">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
               <h3>Quản lý đơn hàng</h3>
               <p>Xem và xử lý các đơn hàng của khách hàng.</p>
               <a href="orders.php" class="btn btn-primary">Truy cập ngay</a>
@@ -151,7 +160,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
           <!-- Quản lý khách hàng -->
           <div class="col-md-6 col-lg-4">
             <div class="admin-card">
-              <i class="fas fa-users"></i>
+              <div class="admin-icon">
+                <i class="fas fa-users"></i>
+              </div>
               <h3>Quản lý khách hàng</h3>
               <p>Quản lý thông tin và tài khoản của khách hàng.</p>
               <a href="customers.php" class="btn btn-primary">Truy cập ngay</a>
@@ -160,7 +171,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
           <!-- Dịch vụ cho khách hàng -->
           <div class="col-md-6 col-lg-4">
             <div class="admin-card">
-              <i class="fas fa-headset"></i>
+              <div class="admin-icon">
+                <i class="fas fa-headset"></i>
+              </div>
               <h3>Dịch vụ cho khách hàng</h3>
               <p>Xử lý các yêu cầu hỗ trợ từ khách hàng.</p>
               <a href="services.php" class="btn btn-primary">Truy cập ngay</a>

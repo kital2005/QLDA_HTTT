@@ -124,24 +124,43 @@ if (!empty($product_ids)) {
   document.getElementById("confirmPaymentMethod").addEventListener("click", function() {
       let selected = document.querySelector("input[name='payment_method_option']:checked").value;
       
-      // Đưa vào input hidden trong form checkout
-      document.querySelector("input[name='payment_method']").value = selected;
-
       // Nếu chọn chuyển khoản → chuyển trang QR
       if (selected === "bank_transfer") {
+          // --- SỬA LỖI 1: VALIDATION ---
+          const name = document.getElementById("checkout-name").value.trim();
+          const phone = document.getElementById("checkout-phone").value.trim();
+          const address = document.getElementById("checkout-address").value.trim();
+
+          if (!name || !phone || !address) {
+              alert("Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ nhận hàng.");
+              // Đóng modal để người dùng có thể điền thông tin
+              let modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+              modal.hide();
+              return; // Dừng thực thi
+          }
+          // --- KẾT THÚC SỬA LỖI 1 ---
+
           // Lưu form vào session bằng AJAX
           const form = document.getElementById("checkoutForm");
           const formData = new FormData(form);
+          // Cập nhật phương thức thanh toán trong formData trước khi gửi
+          formData.set('payment_method', 'bank_transfer');
 
           fetch("save_order_temp.php", {
               method: "POST",
               body: formData
+          }).then(response => response.text()).then(data => {
+              console.log(data); // Giúp debug, xem output từ save_order_temp.php
+              window.location.href = "bank_transfer.php";
           }).then(() => {
               window.location.href = "bank_transfer.php";
           });
 
           return;
       }
+
+      // Nếu là COD, chỉ cần cập nhật input hidden
+      document.querySelector("input[name='payment_method']").value = 'cod';
 
       // Đóng modal để tiếp tục đặt COD
       let modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
@@ -278,7 +297,7 @@ if (!empty($product_ids)) {
             <div class="row border-top pt-3">
                 <div class="col-md-6">
                     <label for="notes" class="form-label">Lời nhắn cho người bán:</label>
-                    <input type="text" id="notes" name="notes" class="form-control" placeholder="Lưu ý cho người bán...">
+                    <input type="text" id="notes" name="notes" class="form-control" placeholder="Lưu ý cho người bán..." form="checkoutForm">
                 </div>
                 <div class="col-md-6 d-flex align-items-center justify-content-end">
                     <span class="me-3">Đơn vị vận chuyển: <strong>Giao hàng nhanh</strong></span>
@@ -291,24 +310,16 @@ if (!empty($product_ids)) {
         <!-- Phần thanh toán cuối cùng -->
         <div class="bg-white p-4 rounded-3 shadow-sm mt-4">
             <div class="row align-items-center">
-                <!-- Voucher -->
-                <div class="col-lg-4 border-end">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-ticket-alt text-warning me-2 fs-4"></i>
-                        <span class="me-auto">TechPhone Voucher</span>
-                        <a href="#" class="btn btn-sm btn-outline-secondary">Chọn hoặc nhập mã</a>
-                    </div>
-                </div>
                 <!-- Phương thức thanh toán -->
-                <div class="col-lg-4 border-end mt-3 mt-lg-0">
+                <div class="col-lg-6 border-end mt-3 mt-lg-0">
                      <div class="d-flex align-items-center">
-                        <i class="fas fa-credit-card text-success me-2 fs-4"></i>
+                        <i class="fas fa-credit-card text-success me-2 fs-4"></i> 
                         <span class="me-auto fw-bold">Phương thức thanh toán</span>
-                        <a href="#" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#paymentModal">Thanh toán khi nhận hàng <i class="fas fa-chevron-right fa-xs"></i></a>
+                        <a href="#" class="btn btn-link" id="paymentMethodText" data-bs-toggle="modal" data-bs-target="#paymentModal">Thanh toán khi nhận hàng <i class="fas fa-chevron-right fa-xs"></i></a>
                     </div>
                 </div>
                 <!-- Chi tiết thanh toán -->
-                <div class="col-lg-4 mt-3 mt-lg-0">
+                <div class="col-lg-6 mt-3 mt-lg-0">
                     <div class="d-flex justify-content-between">
                         <span>Tổng tiền hàng</span>
                         <span><?php echo number_format($total_price, 0, ',', '.'); ?>₫</span>
@@ -316,10 +327,6 @@ if (!empty($product_ids)) {
                     <div class="d-flex justify-content-between">
                         <span>Phí vận chuyển</span>
                         <span>0₫</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Giảm giá voucher</span>
-                        <span class="text-danger">-0₫</span>
                     </div>
                     <div class="d-flex justify-content-between mt-2">
                         <strong class="fs-5">Tổng thanh toán:</strong>

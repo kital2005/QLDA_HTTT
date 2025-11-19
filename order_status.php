@@ -135,6 +135,9 @@ $current_status_index = array_search($current_status, $status_keys);
                         <p><strong>Tên người nhận:</strong> <?php echo htmlspecialchars($order['TEN_KHACH_HANG']); ?></p>
                         <p><strong>Số điện thoại:</strong> <?php echo htmlspecialchars($order['SDT_KHACH_HANG']); ?></p>
                         <p><strong>Địa chỉ:</strong> <?php echo htmlspecialchars($order['DIA_CHI_GIAO_HANG']); ?></p>
+                        <?php if (!empty($order['GHI_CHU'])): ?>
+                            <p><strong>Ghi chú:</strong> <span class="text-muted fst-italic"><?php echo htmlspecialchars($order['GHI_CHU']); ?></span></p>
+                        <?php endif; ?>
                     </div>
                     <div class="col-md-6">
                         <h5>Thông tin thanh toán</h5>

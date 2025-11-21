@@ -102,7 +102,7 @@ $(document).ready(function () {
     distance: "40px",
   });
 
-  $(".navbar-nav>li>a").on("click", function () {
+  $(".navbar-nav > li > a:not(.dropdown-toggle)").on("click", function () {
     $(".navbar-collapse").collapse("hide");
   });
 
@@ -110,45 +110,45 @@ $(document).ready(function () {
   // 2. CHỨC NĂNG ẨN/HIỆN MẬT KHẨU
   // ===============================================
   // Gắn sự kiện click vào tất cả các nút có class 'password-toggle-btn'
-  $('.password-toggle-btn').on('click', function (e) {
+  $(".password-toggle-btn").on("click", function (e) {
     // 1. Ngăn chặn hành vi mặc định (quan trọng!)
     e.preventDefault();
 
     // 2. Tìm các phần tử liên quan một cách chính xác
     const button = $(this);
     // Tìm thẻ div.position-relative gần nhất chứa nút này
-    const parentWrapper = button.closest('.position-relative'); 
+    const parentWrapper = button.closest(".position-relative");
     // Từ thẻ div đó, tìm ô input bên trong
-    const passwordInput = parentWrapper.find('input');
+    const passwordInput = parentWrapper.find("input");
     // Tìm icon bên trong nút
-    const icon = button.find('i');
+    const icon = button.find("i");
 
     // 3. Thực hiện thay đổi
-    if (passwordInput.attr('type') === 'password') {
+    if (passwordInput.attr("type") === "password") {
       // Nếu đang là password -> chuyển sang text và đổi icon
-      passwordInput.attr('type', 'text');
-      icon.removeClass('fa-eye').addClass('fa-eye-slash');
+      passwordInput.attr("type", "text");
+      icon.removeClass("fa-eye").addClass("fa-eye-slash");
     } else {
       // Ngược lại, chuyển về password và đổi icon
-      passwordInput.attr('type', 'password');
-      icon.removeClass('fa-eye-slash').addClass('fa-eye');
+      passwordInput.attr("type", "password");
+      icon.removeClass("fa-eye-slash").addClass("fa-eye");
     }
   });
 
   // Gắn sự kiện 'input' vào tất cả các ô input type="password"
-  $('input[type="password"]').on('input', function() {
+  $('input[type="password"]').on("input", function () {
     // 1. Tìm các phần tử liên quan
     const passwordInput = $(this);
-    const parentWrapper = passwordInput.closest('.position-relative');
-    const toggleButton = parentWrapper.find('.password-toggle-btn');
+    const parentWrapper = passwordInput.closest(".position-relative");
+    const toggleButton = parentWrapper.find(".password-toggle-btn");
 
     // 2. Kiểm tra xem ô input có nội dung hay không
     if (passwordInput.val().length > 0) {
       // Nếu có, hiện nút "con mắt"
-      toggleButton.removeClass('d-none');
+      toggleButton.removeClass("d-none");
     } else {
       // Nếu không, ẩn nút "con mắt"
-      toggleButton.addClass('d-none');
+      toggleButton.addClass("d-none");
     }
   });
   let lastScrollTop = 0;
@@ -158,8 +158,11 @@ $(document).ready(function () {
   if (header) {
     const headerHeight = header.offsetHeight;
 
-    window.addEventListener("scroll", function () {
-        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    window.addEventListener(
+      "scroll",
+      function () {
+        let scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
         if (scrollTop > lastScrollTop && scrollTop > headerHeight) {
           // Scroll Down
           header.classList.add("header-hidden");
@@ -168,7 +171,9 @@ $(document).ready(function () {
           header.classList.remove("header-hidden");
         }
         lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // For Mobile or negative scrolling
-      }, false);
+      },
+      false
+    );
   }
 
   function setupCountdown() {
@@ -199,7 +204,8 @@ $(document).ready(function () {
 
       if (distance < 0) {
         clearInterval(interval);
-        countdownElement.innerHTML = "<div class='fs-5 text-danger'>Đã kết thúc!</div>";
+        countdownElement.innerHTML =
+          "<div class='fs-5 text-danger'>Đã kết thúc!</div>";
       }
     }, 1000);
   }
@@ -211,47 +217,51 @@ $(document).ready(function () {
   // ===============================================
 
   // Chức năng Tăng/Giảm Số Lượng Sản Phẩm
-  $("#button-minus").click(function() {
-      let quantityInput = $("#quantity");
-      let currentValue = parseInt(quantityInput.val());
-      // Giới hạn tối thiểu là 1 sản phẩm
-      if (currentValue > 1) {
-          quantityInput.val(currentValue - 1);
-      }
+  $("#button-minus").click(function () {
+    let quantityInput = $("#quantity");
+    let currentValue = parseInt(quantityInput.val());
+    // Giới hạn tối thiểu là 1 sản phẩm
+    if (currentValue > 1) {
+      quantityInput.val(currentValue - 1);
+    }
   });
 
-  $("#button-plus").click(function() {
-      let quantityInput = $("#quantity");
-      let currentValue = parseInt(quantityInput.val());
-      // Tăng số lượng sản phẩm lên 1
-      quantityInput.val(currentValue + 1);
+  $("#button-plus").click(function () {
+    let quantityInput = $("#quantity");
+    let currentValue = parseInt(quantityInput.val());
+    // Tăng số lượng sản phẩm lên 1
+    quantityInput.val(currentValue + 1);
   });
 
   // Chức năng Chuyển đổi ảnh thumbnail
-  $('.thumbnail-images img').click(function() {
-    const mainImage = $('#mainProductImage');
-    const newImageSrc = $(this).attr('src');
+  $(".thumbnail-images img").click(function () {
+    const mainImage = $("#mainProductImage");
+    const newImageSrc = $(this).attr("src");
 
     // Đặt ảnh mới cho ảnh chính
-    mainImage.attr('src', newImageSrc);
+    mainImage.attr("src", newImageSrc);
 
     // Loại bỏ và thêm class active cho ảnh thumb
-    $('.thumbnail-images img').removeClass('active');
-    $(this).addClass('active');
+    $(".thumbnail-images img").removeClass("active");
+    $(this).addClass("active");
   });
 
   // Xử lý Form Liên hệ (Simple Validation)
   (function () {
-    'use strict'
-    var form = document.getElementById('contactForm');
+    "use strict";
+    var form = document.getElementById("contactForm");
     if (form) {
-      form.addEventListener('submit', function (event) {
-        if (!form.checkValidity()) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        form.classList.add('was-validated');
-      }, false)
+      form.addEventListener(
+        "submit",
+        function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add("was-validated");
+        },
+        false
+      );
     }
   })();
 });

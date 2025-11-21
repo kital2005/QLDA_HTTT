@@ -109,11 +109,11 @@ if ($rating_filter > 0) {
     $types .= 'i';
 }
 
-// Bộ lọc mới dựa trên CHI_TIET_KY_THUAT (multiple selections)
+// Bộ lọc mới dựa trên TEN cho brand, CHI_TIET_KY_THUAT cho các thuộc tính khác (multiple selections)
 if (!empty($brand_filters)) {
     $conditions = [];
     foreach ($brand_filters as $brand) {
-        $conditions[] = "LOWER(CAST(CHI_TIET_KY_THUAT AS CHAR)) LIKE ?";
+        $conditions[] = "LOWER(TEN) LIKE ?";
         $params[] = '%' . strtolower($brand) . '%';
         $types .= 's';
     }
@@ -593,8 +593,8 @@ $types .= 'ii';
                   <div class="row g-2">
                     <?php
                     $brands = [
-                      ['name' => 'iPhone', 'icon' => 'fab fa-apple', 'value' => 'Apple'],
-                      ['name' => 'Samsung', 'icon' => 'fas fa-mobile-alt', 'value' => 'Sam sung'],
+                      ['name' => 'iPhone', 'icon' => 'fab fa-apple', 'value' => 'iPhone'],
+                      ['name' => 'Samsung', 'icon' => 'fas fa-mobile-alt', 'value' => 'Samsung'],
                       ['name' => 'Oppo', 'icon' => 'fas fa-mobile-alt', 'value' => 'Oppo'],
                       ['name' => 'Vivo', 'icon' => 'fas fa-mobile-alt', 'value' => 'Vivo'],
                       ['name' => 'Xiaomi', 'icon' => 'fas fa-mobile-alt', 'value' => 'Xiaomi'],
@@ -640,7 +640,7 @@ $types .= 'ii';
                 <div class="col-md-6 mb-4">
                   <h6 class="fw-bold mb-3"><i class="fas fa-memory me-2"></i>RAM</h6>
                   <?php
-                  $rams = ['4GB', '6GB', '8GB', '10GB', '12GB', '16GB'];
+                  $rams = ['8GB', '12GB', '16GB'];
                   $selected_rams = isset($_GET['ram']) ? (array)$_GET['ram'] : [];
                   foreach ($rams as $ram): ?>
                     <div class="form-check mb-2">
@@ -672,7 +672,7 @@ $types .= 'ii';
                 <div class="col-md-6 mb-4">
                   <h6 class="fw-bold mb-3"><i class="fas fa-tachometer-alt me-2"></i>Tần số quét</h6>
                   <?php
-                  $refresh_rates = ['60Hz', '90Hz', '120Hz', '144Hz'];
+                  $refresh_rates = ['120Hz', '144Hz'];
                   $selected_refresh = isset($_GET['refresh_rate']) ? (array)$_GET['refresh_rate'] : [];
                   foreach ($refresh_rates as $rate): ?>
                     <div class="form-check mb-2">
@@ -689,7 +689,7 @@ $types .= 'ii';
                   <h6 class="fw-bold mb-3"><i class="fas fa-hdd me-2"></i>Dung lượng lưu trữ</h6>
                   <div class="row g-2">
                     <?php
-                    $storages = ['64GB', '128GB', '256GB', '512GB', '1TB'];
+                    $storages = ['128GB', '256GB', '512GB', '1TB'];
                     $selected_storages = isset($_GET['storage']) ? (array)$_GET['storage'] : [];
                     foreach ($storages as $storage): ?>
                       <div class="col-6 col-md-4 col-lg-2">

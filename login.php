@@ -31,6 +31,7 @@ if ($result_nav_categories) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/logo-web.svg" type="image/svg+xml">
     <title>Đăng Nhập - Phụ Kiện Điện Thoại Di Động</title>
     <!-- Bootstrap CSS -->
     <link

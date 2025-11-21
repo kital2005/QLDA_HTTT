@@ -29,6 +29,7 @@ if (isset($_GET['email'])) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/logo-web.svg" type="image/svg+xml">
     <title>Đăng Ký - Phụ Kiện Điện Thoại Di Động</title>
     <!-- Bootstrap CSS -->
     <link
@@ -193,24 +194,20 @@ if (isset($_GET['email'])) {
                   </div>
                   <div class="mb-3">
                     <label for="password" class="form-label">Mật Khẩu</label>
-                    <div class="position-relative">
-                      <input
-                        type="password"
-                        class="form-control"
-                        id="password"
-                        name="password"
-                        required
-                        
-                      />
-                      <button
-                        class="btn position-absolute end-0 top-0 password-toggle-btn d-none"
-                        type="button"
-                        style="border: none; background: transparent; z-index: 10;"
-                        >
-                        <i class="fas fa-eye"></i>
-                      </button>
+                    <div class="input-group has-validation">
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="password"
+                            name="password"
+                            required
+                            minlength="6"
+                        />
+                        <button class="btn btn-outline-secondary password-toggle-btn d-none" type="button" style="z-index: 10;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="invalid-feedback">Mật khẩu phải có ít nhất 6 ký tự.</div>
                     </div>
-                    <div class="invalid-feedback">Vui lòng nhập mật khẩu.</div>
                   </div>
                   <div class="mb-3">
                     <label for="confirmPassword" class="form-label"
@@ -218,23 +215,19 @@ if (isset($_GET['email'])) {
                     >
                     <div class="position-relative">
                       <input
-                        type="password"
-                        class="form-control"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        required
-                        
+                          type="password"
+                          class="form-control"
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          required
                       />
                       <button
-                        class="btn position-absolute end-0 top-0 password-toggle-btn d-none"
-                        type="button"
-                        style="border: none; background: transparent; z-index: 10;"
-                        >
-                        <i class="fas fa-eye"></i>
+                          class="btn position-absolute end-0 top-0 password-toggle-btn d-none"
+                          type="button"
+                          style="border: none; background: transparent; z-index: 10;">
+                          <i class="fas fa-eye"></i>
                       </button>
-                    </div>
-                    <div class="invalid-feedback">
-                      Vui lòng xác nhận mật khẩu.
+                      <div class="invalid-feedback">Vui lòng xác nhận mật khẩu.</div>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-primary w-100">
@@ -335,5 +328,41 @@ if (isset($_GET['email'])) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Custom JS -->
     <script src="js/script.js"></script>
+    <script>
+      // Script để kiểm tra mật khẩu và xác nhận mật khẩu
+      (function () {
+        'use strict';
+
+        const form = document.getElementById('registerForm');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+
+        form.addEventListener('submit', function (event) {
+          // Kiểm tra mật khẩu nhập lại có khớp không
+          if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity('Mật khẩu xác nhận không khớp.');
+          } else {
+            confirmPassword.setCustomValidity('');
+          }
+
+          // Hiển thị thông báo lỗi của Bootstrap
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+
+        // Xóa thông báo lỗi khi người dùng bắt đầu gõ lại
+        [password, confirmPassword].forEach(item => {
+            item.addEventListener('input', () => {
+                if (confirmPassword.customValidity !== '') {
+                    confirmPassword.setCustomValidity('');
+                }
+            });
+        });
+
+      })();
+    </script>
   </body>
 </html>

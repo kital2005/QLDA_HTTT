@@ -17,6 +17,7 @@ if ($result_nav_categories) {
 <!DOCTYPE html>
 <html lang="vi" data-bs-theme="light">
 <head>
+    <link rel="icon" href="images/logo-web.svg" type="image/svg+xml">
     <meta charset="UTF-8" />
     <title>Quên Mật Khẩu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>

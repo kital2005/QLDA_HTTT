@@ -6,6 +6,21 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     header("location: index.php");
     exit;
 }
+
+// --- TRUY VẤN DỮ LIỆU THỐNG KÊ ---
+
+// 1. Lấy tổng doanh thu và tổng số đơn hàng
+// Giả định bảng DON_HANG có các cột TONG_TIEN và MA_DH.
+$total_revenue = 0;
+$total_orders = 0;
+$sql_totals = "SELECT SUM(TONG_TIEN) as total_revenue, COUNT(MA_DH) as total_orders FROM DON_HANG WHERE TRANG_THAI = 'da_giao'";
+$result_totals = $conn->query($sql_totals);
+if ($result_totals && $result_totals->num_rows > 0) {
+    $row = $result_totals->fetch_assoc();
+    $total_revenue = $row['total_revenue'] ?? 0;
+    $total_orders = $row['total_orders'] ?? 0;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -123,6 +138,28 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
             Quản lý hệ thống cửa hàng điện thoại di động
           </p>
         </div>
+
+        <!-- Thống kê tổng quan -->
+        <div class="row g-4 mb-5">
+          <div class="col-md-6">
+            <div class="card text-center h-100">
+              <div class="card-body">
+                <h5 class="card-title text-primary"><i class="fas fa-dollar-sign me-2"></i>Tổng Doanh Thu</h5>
+                <p class="card-text fs-2 fw-bold"><?php echo number_format($total_revenue, 0, ',', '.'); ?> VNĐ</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card text-center h-100">
+              <div class="card-body">
+                <h5 class="card-title text-success"><i class="fas fa-file-invoice me-2"></i>Tổng Đơn Hàng</h5>
+                <p class="card-text fs-2 fw-bold"><?php echo number_format($total_orders, 0, ',', '.'); ?></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="text-center mb-4">Các mục quản lý</h3>
         <div class="row g-4">
           <!-- Quản lý sản phẩm -->
           <div class="col-md-6 col-lg-4">

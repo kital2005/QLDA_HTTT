@@ -49,7 +49,7 @@ if ($stmt = $conn->prepare($sql)) {
                 $mail->CharSet    = 'UTF-8';
 
                 // Người nhận
-                $mail->setFrom('your-email@gmail.com', 'Tech Phone'); // Email gửi đi và tên người gửi
+                $mail->setFrom('techphoneshopmobile@gmail.com', 'Tech Phone'); // Email gửi đi và tên người gửi
                 $mail->addAddress($email); // Email của người dùng
 
                 // Nội dung email

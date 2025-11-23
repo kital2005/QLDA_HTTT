@@ -1,11 +1,12 @@
-<?php // Đảm bảo session đã được bắt đầu trong config.php
+<?php
+require_once "config.php";
+
+// Đảm bảo session đã được bắt đầu trong config.php
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("location: login.php");
     exit;
 }
-
-require_once "config.php";
 
 // Lấy dữ liệu từ form
 $new_name = $_POST['name'] ?? '';

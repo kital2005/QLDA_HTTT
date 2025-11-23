@@ -30,7 +30,7 @@ $sql .= " ORDER BY TEN ASC";
 
 $stmt = $conn->prepare($sql);
 if (!empty($search_term)) {
-    $stmt->bind_param($types, ...$params);
+    $stmt->bind_param($types, $search_like);
 }
 $stmt->execute();
 $result = $stmt->get_result();

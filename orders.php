@@ -60,12 +60,20 @@ if (!empty($conditions)) {
 $sql .= " ORDER BY NGAY_DAT_HANG DESC";
 
 $stmt = $conn->prepare($sql);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
+// Sửa lỗi: Thêm lại khối bind_param và kiểm tra lỗi
+if ($stmt === false) {
+    // Xử lý lỗi nếu prepare thất bại
+    $orders = [];
+    $_SESSION['error'] = "Lỗi truy vấn CSDL: " . $conn->error;
+} else {
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $orders = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
 // Lấy các đơn hàng có yêu cầu đang chờ
 $requests = [];
 $sql_requests = "SELECT d.MA_DH, d.TRANG_THAI, d.TRANG_THAI_YEU_CAU, d.LY_DO_HUY_TRA, d.NGAY_DAT_HANG, u.TEN 

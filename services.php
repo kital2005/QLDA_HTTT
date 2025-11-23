@@ -153,11 +153,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
                         $result_messages = $stmt_messages->get_result();
                     }
 
-                    if (!empty($search_contact)) {
-                        $search_like = '%' . strtolower($search_contact) . '%';
-                        $stmt_messages->bind_param("sss", $search_like, $search_like, $search_like);
-                    }
-
                     if ($result_messages && $result_messages->num_rows > 0) { // SỬA LỖI: Thêm kiểm tra $result_messages tồn tại
                         while($row = $result_messages->fetch_assoc()) {
                             echo "<tr>";
